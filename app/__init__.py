@@ -1,10 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask
 
 def create_app():
     app = Flask(__name__)
 
-    @app.route('/')
-    def mainpage():
-        return render_template("main.html")
+    # Load configuration
+    app.config.from_object('config')
+
+    # Register routes
+    from .routes import main
+    app.register_blueprint(main)
 
     return app
