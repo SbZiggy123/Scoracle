@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+
+    <form action="" method="post" novalidate class="login">
+        <img src="{{ url_for('static', filename='user.png') }}" 
+        alt="User Image">
+        <h1>Login</h1>
+        <p>
+        {{ form.hidden_tag() }}
+        {{ form.user_id.label }} 
+        {{ form.user_id() }}
+        {% for error in form.user_id.errors %}
+            {{ error }}
+        {% endfor %}
+        </p>
+        <p>
+        {{ form.password.label }} 
+        {{ form.password() }}
+        {% for error in form.password.errors %}
+            {{ error }}
+        {% endfor %}
+        </p>
+        <p>
+        {{ form.submit() }}
+        </p>
+         <a href="{{ url_for('register') }}" class="Member">Don't have an account?</a><!--https://pixabay.com/vectors/blank-profile-picture-mystery-man-973460/ same picture for register-->
+    </form>
+
+
+{% endblock %} 

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scoracle</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename = 'styles.css') }}">
+        <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
+    </head>
+    <body>
+        <header>Scoracle</header>
+        <ul class="Navbar">
+            <li class="dropdown">
+                <a href="{{ url_for('fixtures') }}" class="dropdown-trigger">Fixtures</a>
+            </li>
+            <li class="dropdown">
+                <a href="" class="dropdown-trigger">Fantasy Leagues</a>
+                <div class="Content">
+                    <a href="{{ url_for('createLeagues') }}">Create League</a>
+                    <a href="{{ url_for('joinLeague') }}">Join League</a>
+                    <a href="{{ url_for('currentLeagues') }}">Check Current Leagues</a>
+            </li>
+            <li class="dropdown">
+                <a href="{{ url_for('PremierLeague') }}" class="dropdown-trigger">Premier League</a>
+            </li>
+            <li class="dropdown">
+                <a href="{{ url_for('login') }}" class="dropdown-trigger">Login</a>
+            </li>
+            <li class="dropdown">
+                <a href="{{ url_for('register') }}" class="dropdown-trigger">Register</a>
+            </li>
+        </ul>
+        <form action="{{ url_for('search') }}" method="get">
+            <input type="text" name="query" placeholder="Search"> 
+            <button type="submit">Search</button>
+        </form>
+        {% block main_content %}
+        {% endblock %}
+    </body>
+</html>
