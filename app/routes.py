@@ -3,7 +3,7 @@ from flask import Flask, Blueprint, render_template, request, redirect, url_for,
 from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length, EqualTo
 
 main = Blueprint('main', __name__)
 
@@ -12,27 +12,27 @@ def mainpage():
     return render_template("base.html")
 
 @main.route('/PremierLeague')
-def mainpage():
+def premier_league():
     return render_template("PremierLeague.html")
 
 @main.route('/createLeague')
-def mainpage():
+def create_league():
     return render_template("createLeague.html")
 
 @main.route('/currentLeagues')
-def mainpage():
+def current_leagues():
     return render_template("currentLeagues.html")
 
 @main.route('/fixtures')
-def mainpage():
+def fixtures():
     return render_template("fixtures.html")
 
 @main.route('/joinLeague')
-def mainpage():
+def join_league():
     return render_template("joinLeague.html")
 
 @main.route('/results')
-def mainpage():
+def results():
     return render_template("results.html")
 
 
@@ -43,7 +43,7 @@ def get_user(username):
 
 # WTForms Login Form
 class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
+    user_id = StringField("User ID", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Login")
 
@@ -51,13 +51,13 @@ class LoginForm(FlaskForm):
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        username = form.username.data
+        user_id = form.user_id.data
         password = form.password.data
 
-        user = get_user(username)  # Fetch user from database
+        user = get_user(user_id)  # Fetch user from database
 
         if user and user["password"] == password:
-            session["user"] = username  # Store user session
+            session["user"] = user_id  # Store user session
             flash("Login successful!", "success")
             return redirect(url_for("dashboard"))
         else:
@@ -72,6 +72,29 @@ def logout():
     flash("Logged out!", "info")
     return redirect(url_for("login"))
 
-@main.route('/register')
-def mainpage():
-    return render_template("register.html")
+class RegisterForm(FlaskForm):
+    user_id = StringField('User ID', validators=[DataRequired(), Length(min=4, max=20)])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    password2 = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message="Passwords must match")])
+    submit = SubmitField('Register')
+
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user_id = form.user_id.data
+        password = form.password.data
+        password2 = form.password2.data
+
+        if password != password2:
+            flash("Passwords do not match!", "danger")
+        else:
+            flash(f"Registration feature not implemented yet. You entered: {user_id}, {password}", "info")
+            return redirect(url_for('main.register'))  # Refresh the page after "registration"
+
+    return render_template('register.html', form=form)
+
+@main.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('query', '')  # Get the search query from the URL parameters
+    return f" searched for: {query}"
