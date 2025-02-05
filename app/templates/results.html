@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+ 
+    <main>
+        <h2>Search Results</h2>
+        <p>You searched for <b>{{ query }}</b></p>
+        {% if results %}
+        <ul>
+            {%for item in results %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No results found </p>
+        {% endif %}
+    </main>
+      <footer>Footer</footer>
+    </div>
+{% endblock %} 
