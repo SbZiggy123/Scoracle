@@ -9,9 +9,9 @@
         <h1>Login</h1>
         <p>
         {{ form.hidden_tag() }}
-        {{ form.user_id.label }} 
-        {{ form.user_id() }}
-        {% for error in form.user_id.errors %}
+        {{ form.username.label }} 
+        {{ form.username() }}
+        {% for error in form.username.errors %}
             {{ error }}
         {% endfor %}
         </p>

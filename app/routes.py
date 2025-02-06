@@ -4,7 +4,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
-from .models import get_user, add_user, user_exists, init_db 
+from .models import get_user, add_user, user_exists, init_db, verify_password
 
 main = Blueprint('main', __name__)
 
@@ -44,7 +44,7 @@ def results():
 
 # WTForms Login Form
 class LoginForm(FlaskForm):
-    user_id = StringField("User ID", validators=[DataRequired()])
+    username = StringField("Username", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Login")
 
@@ -52,13 +52,13 @@ class LoginForm(FlaskForm):
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        user_id = form.user_id.data
+        username = form.username.data
         password = form.password.data
 
-        user = get_user(user_id)  # Fetch user from database
+        user = get_user(username)  # Fetch user from database
 
-        if user and user["password"] == password:
-            session["user_id"] = user_id  # Store user session
+        if verify_password(username, password):
+            session["username"] = username  # Store user session
             flash("Login successful!", "success")
             return redirect(url_for("main.home"))
         else:
@@ -69,12 +69,12 @@ def login():
 # Logout Route
 @main.route("/logout")
 def logout():
-    session.pop("user_id", None)
+    session.pop("username", None)
     flash("Logged out!", "info")
     return redirect(url_for("main.login"))
 
 class RegisterForm(FlaskForm):
-    user_id = StringField('User ID', validators=[DataRequired(), Length(min=4, max=20)])
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     password2 = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message="Passwords must match")])
     submit = SubmitField('Register')
@@ -83,16 +83,16 @@ class RegisterForm(FlaskForm):
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        user_id = form.user_id.data
+        username = form.username.data
         password = form.password.data
         password2 = form.password2.data
 
         if password != password2:
             flash("Passwords do not match!", "danger")
-        elif user_exists(user_id):
+        elif user_exists(username):
             flash("Username already exists!", "danger")
         else:
-            if add_user(user_id, password):
+            if add_user(username, password):
                 flash("Registration successful! Please login.", "success")
                 return redirect(url_for("main.login"))
             else:
@@ -107,6 +107,6 @@ def search():
 
 @main.route("/home")
 def home():
-    if "user_id" not in session:
+    if "username" not in session:
         return redirect(url_for("main.login"))
-    return render_template("home.html", username=session["user_id"])
+    return render_template("home.html", username=session["username"])
