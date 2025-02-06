@@ -55,9 +55,9 @@ def login():
         username = form.username.data
         password = form.password.data
 
-        user = get_user(username)  # Fetch user from database
+        user = get_user(username)  # Fetch user from database.. redundant?
 
-        if verify_password(username, password):
+        if user and verify_password(username, password):
             session["username"] = username  # Store user session
             flash("Login successful!", "success")
             return redirect(url_for("main.home"))
