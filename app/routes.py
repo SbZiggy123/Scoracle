@@ -4,9 +4,15 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
+from .models import get_user, add_user, user_exists, init_db 
 
 main = Blueprint('main', __name__)
 
+@main.before_app_first_request
+def initialise_database():
+    init_db()
+    
+    
 @main.route('/')
 def mainpage():
     return render_template("base.html")
@@ -59,7 +65,7 @@ def login():
         if user and user["password"] == password:
             session["user"] = user_id  # Store user session
             flash("Login successful!", "success")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("main.mainpage"))
         else:
             flash("Invalid username or password.", "danger")
 
@@ -91,6 +97,15 @@ def register():
         else:
             flash(f"Registration feature not implemented yet. You entered: {user_id}, {password}", "info")
             return redirect(url_for('main.register'))  # Refresh the page after "registration"
+        
+        if user_exists(user_id):
+            flash("Username already exists!", "danger")
+        else:
+            if add_user(user_id, password):
+                flash("Registration successful! Please login.", "success")
+                return redirect(url_for("main.login"))
+            else:
+                flash("Registration failed. Please try again.", "danger")
 
     return render_template('register.html', form=form)
 
