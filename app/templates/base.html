@@ -7,7 +7,21 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
-        <header>Scoracle</header>
+        <header>
+            SCORACLE
+            {%if session.user_id %}
+            <span class="username">USERNAME:{{ session.user_id }}</span>
+            {% endif %}
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <ul class="Navbar">
             <li class="dropdown">
                 <a href="{{ url_for('main.fixtures') }}" class="dropdown-trigger">Fixtures</a>
@@ -22,12 +36,18 @@
             <li class="dropdown">
                 <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">Premier League</a>
             </li>
+            {% if session.user_id %}
+                <li class="dropdown">
+                    <a href="{{ url_for('main.logout') }}" class="dropdown-trigger">Logout</a>
+                </li>
+            {% else %}
             <li class="dropdown">
                 <a href="{{ url_for('main.login') }}" class="dropdown-trigger">Login</a>
             </li>
             <li class="dropdown">
                 <a href="{{ url_for('main.register') }}" class="dropdown-trigger">Register</a>
             </li>
+            {% endif %}
         </ul>
         <form action="{{ url_for('main.search') }}" method="get">
             <input type="text" name="query" placeholder="Search"> 

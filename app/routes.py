@@ -42,11 +42,6 @@ def results():
     return render_template("results.html")
 
 
-def get_user(username):
-    #replace this with an actual query from the database
-    fake_users = {"user1": "password123", "user2": "secret"}
-    return {"username": username, "password": fake_users.get(username)} if username in fake_users else None
-
 # WTForms Login Form
 class LoginForm(FlaskForm):
     user_id = StringField("User ID", validators=[DataRequired()])
@@ -63,9 +58,9 @@ def login():
         user = get_user(user_id)  # Fetch user from database
 
         if user and user["password"] == password:
-            session["user"] = user_id  # Store user session
+            session["user_id"] = user_id  # Store user session
             flash("Login successful!", "success")
-            return redirect(url_for("main.mainpage"))
+            return redirect(url_for("main.home"))
         else:
             flash("Invalid username or password.", "danger")
 
@@ -74,9 +69,9 @@ def login():
 # Logout Route
 @main.route("/logout")
 def logout():
-    session.pop("user", None)
+    session.pop("user_id", None)
     flash("Logged out!", "info")
-    return redirect(url_for("login"))
+    return redirect(url_for("main.login"))
 
 class RegisterForm(FlaskForm):
     user_id = StringField('User ID', validators=[DataRequired(), Length(min=4, max=20)])
@@ -94,11 +89,7 @@ def register():
 
         if password != password2:
             flash("Passwords do not match!", "danger")
-        else:
-            flash(f"Registration feature not implemented yet. You entered: {user_id}, {password}", "info")
-            return redirect(url_for('main.register'))  # Refresh the page after "registration"
-        
-        if user_exists(user_id):
+        elif user_exists(user_id):
             flash("Username already exists!", "danger")
         else:
             if add_user(user_id, password):
@@ -113,3 +104,9 @@ def register():
 def search():
     query = request.args.get('query', '')  # Get the search query from the URL parameters
     return f" searched for: {query}"
+
+@main.route("/home")
+def home():
+    if "user_id" not in session:
+        return redirect(url_for("main.login"))
+    return render_template("home.html", username=session["user_id"])
