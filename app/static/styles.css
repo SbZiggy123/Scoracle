@@ -100,3 +100,86 @@ a {
     text-decoration: none;
     color: black;
 }
+
+
+
+
+/* FOR PREM TABLE ------------*/
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #F0F8FF;
+    margin-bottom: 1rem;
+}
+
+.table th,
+.table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #6c5969;
+    font-weight: bold;
+}
+
+.table tr:hover {
+    background-color: #92901d;
+}
+
+/* For mobile */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Champions League positions */
+.table tr:nth-child(-n+4) td {
+    background-color: rgba(0, 255, 0, 0.1);
+}
+
+/* Relegation positions */
+.table tr:nth-last-child(-n+3) td {
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+
+/* fixtures and results=-----------*/
+.team-link:hover {
+    color: #b23ec9;
+    text-decoration: underline;
+}
+
+/* so that their clicked team follows them into fixtures through highlighting it 
+Could probably add more*/
+.highlighted-team {
+    font-weight: bold;
+    color: #2c3e50;
+}   
+
+
+.match-time-link:hover  {
+    color: #42e26f;
+    text-decoration: underline;
+}
+
+/* PREDICTION */
+.teams-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.match-date {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.below {
+    text-align: center;
+    margin-top: 2rem;
+}

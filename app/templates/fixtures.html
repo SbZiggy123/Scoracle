@@ -3,9 +3,66 @@
 {% block main_content %}
 <div class="grid-container">
  
-    <main>
-        <p>Main articles go here need to be figured later</p>
-    </main>
+  <main>
+    {% if team_name %}
+        <h1>{{ team_name }} Fixtures and Results</h1>
+        
+        <!-- Recent Results Section -->
+        <h2 class="section-title">Recent Results</h2>
+        <div class="fixtures-container">
+            {% for result in recent_results %}
+              <div class="match-date">
+                {{ result.datetime.split(' ')[0] }}
+              </div>
+                <div class="match-teams">
+                    <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                        <span class="team-name {% if result.h.title == team_name %}highlighted-team{% endif %}">
+                            {{ result.h.title }}
+                        </span>
+                    </a>
+                    <span class="score">{{ result.goals.h }} - {{ result.goals.a }}</span>
+                    <a href="{{ url_for('main.fixtures', team_name=result.a.title) }}" class="team-link">
+                        <span class="team-name {% if result.a.title == team_name %}highlighted-team{% endif %}">
+                            {{ result.a.title }}
+                        </span>
+                    </a>
+                </div>
+
+            {% endfor %}
+        </div>
+
+        <!-- Upcoming Fixtures Section whatever added to prem table can be added to here cos they're practically same thing... if you want to keep it like that-->
+        <h2 class="section-title">Upcoming Fixtures</h2>
+        <div class="fixtures-container">
+            {% for fixture in upcoming_fixtures %}
+            <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
+              <div class="match-date">
+                {{ fixture.datetime.split(' ')[0] }}
+                <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
+              </div>
+            </a>
+                <div class="match-teams">
+                    <a href="{{ url_for('main.fixtures', team_name=fixture.h.title) }}" class="team-link">
+                        <span class="team-name {% if fixture.h.title == team_name %}highlighted-team{% endif %}">
+                            {{ fixture.h.title }}
+                        </span>
+                    </a>
+                    <span class="score">vs</span>
+                    <a href="{{ url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
+                        <span class="team-name {% if fixture.a.title == team_name %}highlighted-team{% endif %}">
+                            {{ fixture.a.title }}
+                        </span>
+                    </a>
+                </div>
+
+
+            {% endfor %}
+        </div>
+    {% else %}
+        <h1>Premier League Fixtures</h1>
+        <p>Select a team from the Premier League table to view their fixtures and results.</p>
+    {% endif %}
+</main>
 
       <footer>Footer</footer>
     </div>

@@ -2,11 +2,96 @@
 
 {% block main_content %}
 <div class="grid-container">
- 
     <main>
-        <p>Main articles go here need to be figured later</p>
-    </main>
+        <h1>Premier League Table</h1>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Team</th>
+                        <th>MP</th>
+                        <th>W</th>
+                        <th>D</th>
+                        <th>L</th>
+                        <th>GF</th>
+                        <th>GA</th>
+                        <th>GD</th>
+                        <th>Pts</th>
+                        <!-- if you want xg and xga
+                        <th>xG</th>
+                        <th>xGA</th>
+                    -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                          <a href="{{ url_for('main.fixtures', team_name=row[0]) }}" class="team-link">
+                              {{ row[0] }}
+                          </a>
+                        </td>
+                        <td>{{ row[1] }}</td>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[6] }}</td>
+                        <td>{{ row[5]|int - row[6]|int }}</td>
+                        <td>{{ row[7] }}</td>
+                        <!-- if you want xg and xga
+                        <td>{{ "%.2f"|format(row[8]|float) }}</td>
+                        <td>{{ "%.2f"|format(row[9]|float) }}</td>
+                    -->
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-      <footer>Footer</footer>
-    </div>
+        <!-- probably need more divs and stuff for the css-->
+        <h2 class="section-title">Recent Results</h2>
+        <div class="fixtures-container">
+            {% for result in recent_results %}
+              <div class="match-date">
+                {{ result.datetime.split(' ')[0] }}
+              </div>
+                <div class="match-teams">
+                  <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                    <span class="team-name">{{ result.h.title }}</span>
+                  </a>
+                    <span class="score">{{ result.goals.h }} - {{ result.goals.a }}</span>
+                  <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                    <span class="team-name">{{ result.a.title }}</span>
+                  </a>
+                </div>
+            {% endfor %}
+        </div>
+
+
+        <h2 class="section-title">Upcoming Fixtures</h2>
+        <div class="fixtures-container">
+            {% for fixture in upcoming_fixtures %}
+            <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
+              <div class="match-date">
+                {{ fixture.datetime.split(' ')[0] }}
+                <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
+              </div>
+            </a>
+                <div class="match-teams">
+                  <a href="{{ url_for('main.fixtures', team_name=fixture.h.title)}}" class="team-link">
+                      <span class="team-name">{{ fixture.h.title }}</span>
+                  </a>
+                    <span class="score">vs</span>
+                  <a href="{{url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
+                    <span class="team-name">{{ fixture.a.title }}</span>
+                  </a>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+    <footer>Footer</footer>
+</div>
 {% endblock %}

@@ -5,6 +5,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
 from .models import get_user, add_user, user_exists, init_db, verify_password
+import aiohttp
+from understat import Understat # https://github.com/amosbastian/understat
 
 main = Blueprint('main', __name__)
 
@@ -18,8 +20,23 @@ def mainpage():
     return render_template("base.html")
 
 @main.route('/PremierLeague')
-def premier_league():
-    return render_template("PremierLeague.html")
+async def premier_league():
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        # Gets league table without headers cos I put them in already in html.
+        table = await understat.get_league_table("epl", 2024, with_headers=False)
+        
+        results = await understat.get_league_results("epl", 2024)
+        recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
+            
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+        # lambda gets datetime... in docs
+        
+        return render_template("PremierLeague.html", 
+                               table=table,
+                               recent_results=recent_results,
+                               upcoming_fixtures=upcoming_fixtures)
 
 @main.route('/createLeague')
 def create_league():
@@ -30,8 +47,42 @@ def current_leagues():
     return render_template("currentLeagues.html")
 
 @main.route('/fixtures')
-def fixtures():
-    return render_template("fixtures.html")
+@main.route("/fixtures/<team_name>")
+async def fixtures(team_name=None):
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        
+        if team_name:
+            results = await understat.get_team_results(team_name, 2024)
+            recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
+            
+            fixtures = await understat.get_team_fixtures(team_name, 2024)
+            upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+            
+            return render_template(
+                "fixtures.html",
+                team_name=team_name,
+                recent_results=recent_results,
+                upcoming_fixtures=upcoming_fixtures
+            )
+        return render_template("fixtures.html")
+
+@main.route('/prediction/<match_id>')
+async def prediction(match_id):
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        match = next((fixture for fixture in fixtures if fixture["id"] == match_id))
+        
+        if match:
+            return render_template(
+                "prediction.html",
+                match=match
+            )
+        else:
+            flash("Match not found", "error")
+            return redirect(url_for("main.fixtures"))
 
 @main.route('/joinLeague')
 def join_league():
