@@ -31,6 +31,7 @@
         </ul>
         <form action="{{ url_for('main.search') }}" method="get">
             <input type="text" name="query" placeholder="Search"> 
+            <span class="search-icon">&#128269;</span>
             <button type="submit">Search</button>
         </form>
         {% block main_content %}

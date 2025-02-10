@@ -112,4 +112,6 @@ def register():
 @main.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query', '')  # Get the search query from the URL parameters
-    return f" searched for: {query}"
+    
+    return render_template("results.html", query=query, results=results)
+
