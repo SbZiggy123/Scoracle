@@ -9,8 +9,9 @@ import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 
 main = Blueprint('main', __name__)
-
-@main.before_app_first_request
+    
+    # Initialize database before the first request
+@main.before_app_request
 def initialise_database():
     init_db()
     
