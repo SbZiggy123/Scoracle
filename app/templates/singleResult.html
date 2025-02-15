@@ -2,12 +2,37 @@
 
 {% block main_content %}
 <div class="grid-container">
- 
     <main>
-        <p>In depth info on a specific game if you wanna. Can be accessed by clicking any game under results... 
-            maybe the score/date or something. Takes match_id as parameter</p>
-    </main>
+        <div class="teams-container">
+            <div class="team-home-team">
+                <h2>{{ match.h.title }}</h2>
+            </div>
+            
+            <div class="match-time">
+                {{ match.datetime.split(' ')[1][:5] }}
+            </div>
 
-      <footer>Footer</footer>
-    </div>
+            <div class="team-away-team">
+                <h2>{{ match.a.title }}</h2>
+            </div>
+        </div>
+
+        <div class="score-container">
+            <span class="final-score">{{ match.goals.h }} - {{ match.goals.a }}</span>
+        </div>
+            
+        <div class="match-date">
+            {{ match.datetime.split(' ')[0] }}
+        </div>
+
+        <div class="match-stats">
+            <!-- add match statistics here -->
+            <p>some stats:</p>
+           
+        </div>
+        <!-- Players stats will go here too. I am thinking you click on player then 
+         there's some js which shows some shit -->
+    </main>
+    <footer>Footer</footer>
+</div>
 {% endblock %}

@@ -83,7 +83,24 @@ async def prediction(match_id):
             )
         else:
             flash("Match not found", "error")
-            return redirect(url_for("main.fixtures"))
+            return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
+        
+@main.route("/result/<match_id>") #named differently to the html page it's using btw
+async def single_result(match_id):
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        
+        results = await understat.get_league_results("epl", 2024)
+        match = next(result for result in results if result["id"] == match_id)
+        
+        if match:
+            return render_template(
+                "singleResult.html",
+                match=match
+            )
+        else:
+            flash("Match not found", "error")
+            return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
 
 @main.route('/joinLeague')
 def join_league():

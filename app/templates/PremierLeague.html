@@ -55,15 +55,17 @@
         <h2 class="section-title">Recent Results</h2>
         <div class="fixtures-container">
             {% for result in recent_results %}
+            <a href="{{ url_for('main.single_result', match_id=result.id) }}" class="match-time-link">
               <div class="match-date">
                 {{ result.datetime.split(' ')[0] }}
               </div>
+            </a>
                 <div class="match-teams">
                   <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
                     <span class="team-name">{{ result.h.title }}</span>
                   </a>
                     <span class="score">{{ result.goals.h }} - {{ result.goals.a }}</span>
-                  <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                  <a href="{{ url_for('main.fixtures', team_name=result.a.title) }}" class="team-link">
                     <span class="team-name">{{ result.a.title }}</span>
                   </a>
                 </div>
