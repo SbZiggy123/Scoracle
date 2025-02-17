@@ -91,12 +91,47 @@ async def single_result(match_id):
         understat = Understat(session)
         
         results = await understat.get_league_results("epl", 2024)
-        match = next(result for result in results if result["id"] == match_id)
+        match = next((result for result in results if result["id"] == match_id), None)
         
         if match:
+            match_players = await understat.get_match_players(match_id)
+            match_shots = await understat.get_match_shots(match_id)
+            
+            # for table popup gonna do
+            player_season_stats = {}
+            for side in ['h', 'a']:
+                for player_id in match_players[side]:
+                    player_season_stats[player_id] = await understat.get_player_stats(player_id)
+            
+            home_stats = {
+                "shots": len(match_shots["h"]),
+                "shots_on_target": len([shot for shot in match_shots["h"]
+                                        if shot["result"] in ["SavedShot", "Goal"]]),
+                "goals": match["goals"]["h"],
+                "xG": float(match["xG"]["h"]),
+                "player_stats": match_players["h"]
+            }
+
+            away_stats = {
+                "shots": len(match_shots["a"]),
+                "shots_on_target": len([shot for shot in match_shots["a"]
+                                        if shot["result"] in ["SavedShot", "Goal"]]),
+                "goals": match["goals"]["a"],
+                "xG": float(match["xG"]["a"]),
+                "player_stats": match_players["a"]
+            }
+
+
+
+                
             return render_template(
                 "singleResult.html",
-                match=match
+                match=match,
+                home_stats=home_stats,
+                away_stats=away_stats,
+                match_shots=match_shots,
+                match_players=match_players,
+                player_season_stats=player_season_stats
             )
         else:
             flash("Match not found", "error")
@@ -106,7 +141,9 @@ async def single_result(match_id):
 def join_league():
     return render_template("joinLeague.html")
 
-@main.route('/results')
+# might not need this cos we have singleResult (takes match ID as param) 
+# and also fixtures and results of a specific team in fixtures.html maybe rename to fixturesAndResults
+@main.route('/results') 
 def results():
     return render_template("results.html")
 
