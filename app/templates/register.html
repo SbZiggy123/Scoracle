@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 
-{% block main_content %}
+{% block navbar %}{% endblock %} 
+{% block searchbar %}{% endblock %}
 
+{% block main_content %}
+    <div class="Register-container">
     <form action="" method="post" novalidate class="register">
-        <img src="{{ url_for('static', filename='user.png') }}" 
-        alt="User Image">
         <h1>Register</h1>
         <p>
         {{ form.hidden_tag() }}
@@ -32,9 +33,9 @@
         {{ form.submit() }}
         </p>
         <br />
-        <a href="{{ url_for('main.login') }}" class="signIn">Already a Member??? CLICK HERE</a>
+        <a href="{{ url_for('main.login') }}" class="signIn">Already have an Account? Log In</a>
     </form>
-
+    </div>
 
 
 
