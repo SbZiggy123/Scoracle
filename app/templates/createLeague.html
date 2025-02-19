@@ -2,9 +2,19 @@
 
 {% block main_content %}
 <div class="grid-container">
- 
+    <h1>Create Leagues</h1>
     <main>
-        <p>Main articles go here need to be figured later</p>
+        <form>
+          <label>League Name</label>
+          <input type="text" id="leagueName" required>
+          <label>Type of League</label>
+          <select name="leagueType" id="leagueType" required>
+            <option value="classic">Classic Scoring</option>
+            <option value="head2head">Head to Head</option>
+            
+          </select>
+        </form>
+
     </main>
 
       <footer>Footer</footer>

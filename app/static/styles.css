@@ -54,6 +54,13 @@
 .Navbar a:visited{
     color: black;
 }
+.nav-logo {
+    width: 25px; 
+    height: 25px; 
+    object-fit: contain; 
+    vertical-align: middle; 
+    margin-right: 8px;
+}
 #Search{
     padding: 15px;
     width: 96%;
@@ -100,6 +107,132 @@ a {
     text-decoration: none;
     color: black;
 }
+<<<<<<< HEAD
+.register{
+    width: 350px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0,0, 0.2);
+    text-align: center;
+}
+.Register-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+
+}
+.register p{
+    margin-bottom: 15px;
+}
+
+.register input{
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.register input[type="submit"]{
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    border: none;
+    padding: 10px;
+
+}
+.register input[type="submit"]:hover{
+    background: #0056b3;
+}
+.signIn{
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: white;
+    background-color: #007bff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+.signIn:hover{
+    background-color: #0056b3;
+}
+.login{
+    width: 350px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0,0, 0.2);
+    text-align: center;
+}
+.Login-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.login p{
+    margin-bottom: 15px;
+}
+
+.login input{
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.login input[type="submit"]{
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    border: none;
+    padding: 10px;
+
+}
+.login input[type="submit"]:hover{
+    background: #0056b3;
+}
+.Member{
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: white;
+    background-color: #007bff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+.Member:hover{
+    background-color: #0056b3;
+}
+
+.PremTable {
+    width: 100%;
+    border-collapse: collapse; 
+}
+
+.PremTable th, .PremTable td {
+    border: 1px solid black; 
+    padding: 8px;
+    text-align: center;
+}
+
+.fixtures {
+    width: 100%;
+    border-collapse: collapse; 
+}
+
+.fixtures th, .PremTable td {
+    border: 1px solid black; 
+    padding: 8px;
+    text-align: center;
+}
+=======
 
 
 
@@ -216,3 +349,4 @@ Could probably add more*/
     color: #42e26f;
     text-decoration: underline;
 }
+>>>>>>> b3f3babccaf838eb13e034f8f08ff3c3611cddf6

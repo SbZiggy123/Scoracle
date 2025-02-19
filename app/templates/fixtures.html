@@ -1,8 +1,35 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<div class="grid-container">
+  <h1>Fixtures</h1>
+    <div class="grid-container">
  
+<<<<<<< HEAD
+      <main>
+          <table class="fixtures">
+            <thead>
+              <tr>
+                <th>Home Team </th>
+                <th>Away Team</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Stadium</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for fixture in fixtures %}
+              <tr>
+                <td>{{ fixture[0] }}</td>
+                <td>{{ fixture[1] }}</td>
+                <td>{{ fixture[2] }}</td>
+                <td>{{ fixture[3] }}</td>
+                <td>{{ fixture[4] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </main>
+=======
   <main>
     {% if team_name %}
         <h1>{{ team_name }} Fixtures and Results</h1>
@@ -65,6 +92,7 @@
         <p>Select a team from the Premier League table to view their fixtures and results.</p>
     {% endif %}
 </main>
+>>>>>>> b3f3babccaf838eb13e034f8f08ff3c3611cddf6
 
       <footer>Footer</footer>
     </div>
