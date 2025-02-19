@@ -7,8 +7,11 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
+<<<<<<< HEAD
         <header>Scoracle</header>
         {% block navbar %}
+=======
+>>>>>>> ba51c219f02f347a060f414be34757b622ea8476
         <header>
             SCORACLE
             {%if session.username %}
@@ -58,14 +61,14 @@
             </li>
             {% endif %}
         </ul>
-        {% endblock %}
-        {% block searchbar %}
+
         <form action="{{ url_for('main.search') }}" method="get">
             <input type="text" name="query" placeholder="Search"> 
             <span class="search-icon">&#128269;</span>
             <button type="submit">Search</button>
         </form>
-        {% endblock %}
+        
+
         {% block main_content %}
         {% endblock %}
     </body>

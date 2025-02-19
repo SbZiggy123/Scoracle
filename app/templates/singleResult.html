@@ -68,7 +68,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in match_players["h"].values() %}
+                        {% for player in home_stats.player_stats.values()  %}
                         <tr>
                             <td>{{ player.player|replace('&#039;', "'") }}</td>
                             <td>{{ player.position }}</td>
@@ -103,7 +103,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in match_players["a"].values() %}
+                        {% for player in away_stats.player_stats.values() %}
                         <tr>
                             <td>{{ player.player|replace('&#039;', "'") }}
                             </td>

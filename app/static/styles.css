@@ -210,6 +210,30 @@ a {
     background-color: #0056b3;
 }
 
+<<<<<<< HEAD
+=======
+.PremTable {
+    width: 100%;
+    border-collapse: collapse; 
+}
+
+.PremTable th, .PremTable td {
+    border: 1px solid black; 
+    padding: 8px;
+    text-align: center;
+}
+
+.fixtures {
+    width: 100%;
+    border-collapse: collapse; 
+}
+
+.fixtures th, .PremTable td {
+    border: 1px solid black; 
+    padding: 8px;
+    text-align: center;
+}
+>>>>>>> ba51c219f02f34
 
 
 
