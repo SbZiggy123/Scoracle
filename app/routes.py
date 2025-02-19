@@ -209,11 +209,9 @@ def register():
 @main.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query', '')  # Get the search query from the URL parameters
-<<<<<<< HEAD
     
     return render_template("results.html", query=query, results=results)
 
-=======
     return f" searched for: {query}"
 
 @main.route("/home")
@@ -221,4 +219,3 @@ def home():
     if "username" not in session:
         return redirect(url_for("main.login"))
     return render_template("home.html", username=session["username"])
->>>>>>> b3f3babccaf838eb13e034f8f08ff3c3611cddf6

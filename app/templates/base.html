@@ -7,10 +7,8 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
-<<<<<<< HEAD
         <header>Scoracle</header>
         {% block navbar %}
-=======
         <header>
             SCORACLE
             {%if session.username %}
@@ -26,7 +24,6 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
->>>>>>> b3f3babccaf838eb13e034f8f08ff3c3611cddf6
         <ul class="Navbar">
             <li class="dropdown">
                 <a href="{{ url_for('main.fixtures') }}" class="dropdown-trigger">Fixtures</a>
