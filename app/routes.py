@@ -85,6 +85,8 @@ async def prediction(match_id):
             flash("Match not found", "error")
             return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
         
+        # Stats of users predictions in bottom of page
+        
 @main.route("/result/<match_id>") #named differently to the html page it's using btw
 async def single_result(match_id):
     async with aiohttp.ClientSession() as session:
