@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+    <main>
+        <div class="teams-container">
+            <div class="team-home-team">
+                
+                <h2><a href="{{ url_for('main.fixtures', team_name=match.h.title) }}" class="team-link"> {{ match.h.title }} </a></h2>
+            </div>
+            
+            <div class="match-time">
+                {{ match.datetime.split(' ')[1][:5] }}
+            </div>
+
+            <div class="team-away-team">
+                <h2><a href="{{ url_for('main.fixtures', team_name=match.a.title) }}" class="team-link"> {{ match.a.title }} </a></h2>
+            </div>
+        </div>
+
+        <div class="score-container">
+            <span class="final-score">{{ match.goals.h }} - {{ match.goals.a }}</span>
+        </div>
+            
+        <div class="match-date">
+            {{ match.datetime.split(' ')[0] }}
+        </div>
+
+        <div class="match-stats">
+            <h3>Match Statistics</h3>
+            <table class="stats-table">
+                <tr>
+                    <td class="home-stat">{{ home_stats.shots }}</td>
+                    <td class="stat-label">Shots</td>
+                    <td class="away-stat">{{ away_stats.shots }}</td>
+                </tr>
+                <tr>
+                    <td class="home-stat">{{ home_stats.shots_on_target }}</td>
+                    <td class="stat-label">Shots on Target</td>
+                    <td class="away-stat">{{ away_stats.shots_on_target }}</td>
+                </tr>
+                <tr>
+                    <td class="home-stat">{{ "%.2f"|format(home_stats.xG) }}</td>
+                    <td class="stat-label">Expected Goals (xG)</td>
+                    <td class="away-stat">{{ "%.2f"|format(away_stats.xG) }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="player-stats">
+            <h3>Player Statistics</h3>
+            
+            <!-- Home Team Players -->
+            <div class="team-players">
+                <h4>{{ match.h.title }} Players</h4>
+                <table class="player-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Minutes</th>
+                            <th>Goals</th>
+                            <th>Assists</th>
+                            <th>Shots</th>
+                            <th>Key Passes</th>
+                            <th>xG</th>
+                            <th>xA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in match_players["h"].values() %}
+                        <tr>
+                            <td>{{ player.player|replace('&#039;', "'") }}</td>
+                            <td>{{ player.position }}</td>
+                            <td>{{ player.time }}</td>
+                            <td>{{ player.goals }}</td>
+                            <td>{{ player.assists }}</td>
+                            <td>{{ player.shots }}</td>
+                            <td>{{ player.key_passes }}</td>
+                            <td>{{ "%.2f"|format(player.xG|float) }}</td>
+                            <td>{{ "%.2f"|format(player.xA|float) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Away Team Players -->
+            <div class="team-players">
+                <h4>{{ match.a.title }} Players</h4>
+                <table class="player-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Minutes</th>
+                            <th>Goals</th>
+                            <th>Assists</th>
+                            <th>Shots</th>
+                            <th>Key Passes</th>
+                            <th>xG</th>
+                            <th>xA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in match_players["a"].values() %}
+                        <tr>
+                            <td>{{ player.player|replace('&#039;', "'") }}
+                            </td>
+                            <td>{{ player.position }}</td>
+                            <td>{{ player.time }}</td>
+                            <td>{{ player.goals }}</td>
+                            <td>{{ player.assists }}</td>
+                            <td>{{ player.shots }}</td>
+                            <td>{{ player.key_passes }}</td>
+                            <td>{{ "%.2f"|format(player.xG|float) }}</td>
+                            <td>{{ "%.2f"|format(player.xA|float) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+
+
+            <!-- Create some sort of graphic or map? -->
+        </div>
+    </main>
+    <footer>Footer</footer>
+</div>
+{% endblock %}

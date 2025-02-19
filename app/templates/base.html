@@ -7,8 +7,26 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
+<<<<<<< HEAD
         <header>Scoracle</header>
         {% block navbar %}
+=======
+        <header>
+            SCORACLE
+            {%if session.username %}
+            <span class="username">USERNAME:{{ session.username }}</span>
+            {% endif %}
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+>>>>>>> b3f3babccaf838eb13e034f8f08ff3c3611cddf6
         <ul class="Navbar">
             <li class="dropdown">
                 <a href="{{ url_for('main.fixtures') }}" class="dropdown-trigger">Fixtures</a>
@@ -26,6 +44,11 @@
                     Premier League</a>
 
             </li>
+            {% if session.username %}
+                <li class="dropdown">
+                    <a href="{{ url_for('main.logout') }}" class="dropdown-trigger">Logout</a>
+                </li>
+            {% else %}
             <li class="dropdown">
                 <a href="{{ url_for('main.login') }}" class="dropdown-trigger">
                     <img src="{{ url_for('static', filename='loginLogo.jpg') }}" alt="Premier League Logo" class="nav-logo">
@@ -36,6 +59,7 @@
                     <img src="{{ url_for('static', filename='registerLogo.webp') }}" alt="Premier League Logo" class="nav-logo">
                     Register</a>
             </li>
+            {% endif %}
         </ul>
         {% endblock %}
         {% block searchbar %}

@@ -1,5 +1,6 @@
 import sqlite3
 from sqlite3 import Error
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DATABASE = 'scoracle.db'
 
@@ -24,7 +25,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -39,9 +40,10 @@ def add_user(username, password):
     conn = get_db_connection()
     if conn is not None:
         try:
+            password_hash = generate_password_hash(password)
             c = conn.cursor()
-            c.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-                     (username, password))
+            c.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)',
+                     (username, password_hash))
             conn.commit()
             return True
         except Error as e:
@@ -68,6 +70,11 @@ def get_user(username):
         finally:
             conn.close()
     return None
+
+def verify_password(username, password):
+    user = get_user(username)
+    if user:
+        return check_password_hash(user["password_hash"], password)
 
 def user_exists(username):
     """Check if a username already exists."""

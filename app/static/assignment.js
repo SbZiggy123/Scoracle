@@ -22,4 +22,10 @@ document.addEventListener("DOMContentLoaded", function(){
         var content = dropdown.querySelector('.Content')
         content.classList.remove('show')
     }
-})
+
+
+// Maybe this could be more elegant with react if you wanna change it idm
+    // Table popup
+
+
+    });

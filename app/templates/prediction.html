@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+    <main>
+            <div class="teams-container">
+                <div class="team-home-team">
+                    <h2>{{ match.h.title }}</h2>
+                </div>
+                
+                <div class="match-time">
+                    {{ match.datetime.split(' ')[1][:5] }}
+                </div>
+
+                <div class="team-away-team">
+                    <h2>{{ match.a.title }}</h2>
+                </div>
+            </div>
+            
+            <div class="match-date">
+                {{ match.datetime.split(' ')[0] }}
+            </div>
+            <p class="below">more stats here and AIs predictions too and the option to make the prediction on the game here on this page</p>
+    </main>
+    <footer>Footer</footer>
+</div>
+{% endblock %}
