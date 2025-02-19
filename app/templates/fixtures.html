@@ -1,11 +1,33 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<div class="grid-container">
+  <h1>Fixtures</h1>
+    <div class="grid-container">
  
-    <main>
-        <p>Main articles go here need to be figured later</p>
-    </main>
+      <main>
+          <table class="fixtures">
+            <thead>
+              <tr>
+                <th>Home Team </th>
+                <th>Away Team</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Stadium</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for fixture in fixtures %}
+              <tr>
+                <td>{{ fixture[0] }}</td>
+                <td>{{ fixture[1] }}</td>
+                <td>{{ fixture[2] }}</td>
+                <td>{{ fixture[3] }}</td>
+                <td>{{ fixture[4] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </main>
 
       <footer>Footer</footer>
     </div>

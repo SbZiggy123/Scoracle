@@ -1,12 +1,44 @@
 {% extends "base.html" %}
 
 {% block main_content %}
+<h1>Premier League</h1>
 <div class="grid-container">
  
     <main>
-        <p>Main articles go here need to be figured later</p>
+        <table class="PremTable">
+          <thead>
+            <tr>
+              <th>Posistion</th>
+              <th>Team</th>
+              <th>Played</th>
+              <th>Wins</th>
+              <th>Draws</th>
+              <th>Lost</th>
+              <th>Goals For</th>
+              <th>Goals Against</th>
+              <th>Goal Difference</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for team in league_table %}
+            <tr>
+              <td>{{ team[0] }}</td>
+              <td>{{ team[1] }}</td>
+              <td>{{ team[2] }}</td>
+              <td>{{ team[3] }}</td>
+              <td>{{ team[4] }}</td>
+              <td>{{ team[5] }}</td>
+              <td>{{ team[6] }}</td>
+              <td>{{ team[7] }}</td>
+              <td>{{ team[8] }}</td>
+              <td><strong>{{ team[9] }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
     </main>
 
-      <footer>Footer</footer>
+    <footer>Footer</footer>
     </div>
 {% endblock %}
