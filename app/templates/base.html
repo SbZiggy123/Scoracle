@@ -7,6 +7,11 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
+<<<<<<< HEAD
+        <header>Scoracle</header>
+        {% block navbar %}
+=======
+>>>>>>> ba51c219f02f347a060f414be34757b622ea8476
         <header>
             SCORACLE
             {%if session.username %}
@@ -34,7 +39,10 @@
                     <a href="{{ url_for('main.current_leagues') }}">Check Current Leagues</a>
             </li>
             <li class="dropdown">
-                <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">Premier League</a>
+                <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">
+                    <img src="{{ url_for('static', filename='PremLogo.webp') }}" alt="Premier League Logo" class="nav-logo">
+                    Premier League</a>
+
             </li>
             {% if session.username %}
                 <li class="dropdown">
@@ -42,17 +50,25 @@
                 </li>
             {% else %}
             <li class="dropdown">
-                <a href="{{ url_for('main.login') }}" class="dropdown-trigger">Login</a>
+                <a href="{{ url_for('main.login') }}" class="dropdown-trigger">
+                    <img src="{{ url_for('static', filename='loginLogo.jpg') }}" alt="Premier League Logo" class="nav-logo">
+                    Login</a>
             </li>
             <li class="dropdown">
-                <a href="{{ url_for('main.register') }}" class="dropdown-trigger">Register</a>
+                <a href="{{ url_for('main.register') }}" class="dropdown-trigger">
+                    <img src="{{ url_for('static', filename='registerLogo.webp') }}" alt="Premier League Logo" class="nav-logo">
+                    Register</a>
             </li>
             {% endif %}
         </ul>
+
         <form action="{{ url_for('main.search') }}" method="get">
             <input type="text" name="query" placeholder="Search"> 
+            <span class="search-icon">&#128269;</span>
             <button type="submit">Search</button>
         </form>
+        
+
         {% block main_content %}
         {% endblock %}
     </body>

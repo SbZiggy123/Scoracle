@@ -90,6 +90,8 @@ async def prediction(match_id):
             flash("Match not found", "error")
             return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
         
+        # Stats of users predictions in bottom of page
+        
 @main.route("/result/<match_id>") #named differently to the html page it's using btw
 async def single_result(match_id):
     async with aiohttp.ClientSession() as session:
@@ -103,10 +105,7 @@ async def single_result(match_id):
             match_shots = await understat.get_match_shots(match_id)
             
             # for table popup gonna do
-            player_season_stats = {}
-            for side in ['h', 'a']:
-                for player_id in match_players[side]:
-                    player_season_stats[player_id] = await understat.get_player_stats(player_id)
+
             
             home_stats = {
                 "shots": len(match_shots["h"]),
@@ -134,9 +133,7 @@ async def single_result(match_id):
                 match=match,
                 home_stats=home_stats,
                 away_stats=away_stats,
-                match_shots=match_shots,
-                match_players=match_players,
-                player_season_stats=player_season_stats
+                match_shots=match_shots
             )
         else:
             flash("Match not found", "error")
@@ -215,6 +212,9 @@ def register():
 @main.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query', '')  # Get the search query from the URL parameters
+    
+    return render_template("results.html", query=query, results=results)
+
     return f" searched for: {query}"
 
 @main.route("/home")
