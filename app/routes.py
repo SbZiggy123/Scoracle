@@ -5,6 +5,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
 from .models import get_user, add_user, user_exists, init_db, verify_password
+from predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 
@@ -59,7 +60,6 @@ async def fixtures(team_name=None):
             
             fixtures = await understat.get_team_fixtures(team_name, 2024)
             upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
-            
             return render_template(
                 "fixtures.html",
                 team_name=team_name,
@@ -77,6 +77,11 @@ async def prediction(match_id):
         match = next((fixture for fixture in fixtures if fixture["id"] == match_id))
         
         if match:
+            for side in ["h", "a"]:
+                team = match[side]["title"]
+                #adding more 
+
+
             return render_template(
                 "prediction.html",
                 match=match
@@ -133,6 +138,7 @@ async def single_result(match_id):
         else:
             flash("Match not found", "error")
             return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
+        
 
 @main.route('/joinLeague')
 def join_league():
