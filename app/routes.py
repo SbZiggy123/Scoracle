@@ -77,6 +77,7 @@ async def prediction(match_id):
         match = next((fixture for fixture in fixtures if fixture["id"] == match_id))
         
         if match:
+
             for side in ["h", "a"]:
                 team = match[side]["title"]
                 #adding more 
@@ -105,7 +106,28 @@ async def single_result(match_id):
             match_shots = await understat.get_match_shots(match_id)
             
             # for table popup gonna do
+            team_crests = { 
+                "Arsenal": "/static/Arsenal.png",
+                "Aston Villa": "/static/AstonVila.png",
+                "Bournemouth": "/static/Bournemouth.png",
+                "Brentford": "/static/Brentford.png",
+                "Brighton": "/static/Brighton.png",
+                "Chelsea": "/static/Chelsea.png",
+                "Manchester City": "/static/City.png",
+                "Manchester United": "/static/United.png",
+                "Everton": "/static/City.png",
+                "Fulham": "/static/Fulham.png",
+                "Ipswich": "/static/Ipswich.png",
+                "Leicester": "/static/Leicester.png",
+                "Liverpool": "/static/Liverpool.png",
+                "Newcastle": "/static/Newcastle.png",
+                "Crystal Palace": "/static/Palace.png",
+                "Southampton": "/static/Southampton.png",
+                "Tottenham Hotspurs": "/static/Spurs.png",
+                "West Ham": "/static/WestHam.png",
+                "Wolverhampton Wanderers": "/static/Wolves.png",
 
+            }
             
             home_stats = {
                 "shots": len(match_shots["h"]),
