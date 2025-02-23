@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
 from .models import get_user, add_user, user_exists, init_db, verify_password
+from predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -59,7 +60,6 @@ async def fixtures(team_name=None):
             
             fixtures = await understat.get_team_fixtures(team_name, 2024)
             upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
-            
             return render_template(
                 "fixtures.html",
                 team_name=team_name,
@@ -132,7 +132,28 @@ async def single_result(match_id):
             match_shots = await understat.get_match_shots(match_id)
             
             # for table popup gonna do
+            team_crests = { 
+                "Arsenal": "/static/Arsenal.png",
+                "Aston Villa": "/static/AstonVila.png",
+                "Bournemouth": "/static/Bournemouth.png",
+                "Brentford": "/static/Brentford.png",
+                "Brighton": "/static/Brighton.png",
+                "Chelsea": "/static/Chelsea.png",
+                "Manchester City": "/static/City.png",
+                "Manchester United": "/static/United.png",
+                "Everton": "/static/City.png",
+                "Fulham": "/static/Fulham.png",
+                "Ipswich": "/static/Ipswich.png",
+                "Leicester": "/static/Leicester.png",
+                "Liverpool": "/static/Liverpool.png",
+                "Newcastle": "/static/Newcastle.png",
+                "Crystal Palace": "/static/Palace.png",
+                "Southampton": "/static/Southampton.png",
+                "Tottenham Hotspurs": "/static/Spurs.png",
+                "West Ham": "/static/WestHam.png",
+                "Wolverhampton Wanderers": "/static/Wolves.png",
 
+            }
             
             home_stats = {
                 "shots": len(match_shots["h"]),
@@ -165,6 +186,7 @@ async def single_result(match_id):
         else:
             flash("Match not found", "error")
             return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
+        
 
 @main.route('/joinLeague')
 def join_league():
