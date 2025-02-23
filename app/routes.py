@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
 from .models import get_user, add_user, user_exists, init_db, verify_password
-from predict import predictxG
+from .predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
