@@ -1,5 +1,4 @@
-
-from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -7,6 +6,7 @@ from wtforms.validators import DataRequired, Length, EqualTo
 from .models import get_user, add_user, user_exists, init_db, verify_password
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
+import json
 
 main = Blueprint('main', __name__)
     
@@ -68,24 +68,56 @@ async def fixtures(team_name=None):
             )
         return render_template("fixtures.html")
 
-@main.route('/prediction/<match_id>')
+
+from .prediction_model import PredictionSystem
+
+@main.route('/prediction/<match_id>', methods=['GET', 'POST'])
 async def prediction(match_id):
+    # Create a prediction system instance
+    prediction_system = PredictionSystem()
+    
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         
+        # Get match details
         fixtures = await understat.get_league_fixtures("epl", 2024)
-        match = next((fixture for fixture in fixtures if fixture["id"] == match_id))
+        match = next((fixture for fixture in fixtures if fixture["id"] == match_id), None)
         
-        if match:
-            return render_template(
-                "prediction.html",
-                match=match
-            )
-        else:
+        # Switched to initial test here easier to read
+        if not match:
             flash("Match not found", "error")
-            return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
+            return redirect(url_for("main.fixtures"))
         
-        # Stats of users predictions in bottom of page
+        """could move this to model later"""
+        # Get recent xG data for both teams directly from Understat
+        home_xg = await prediction_system.get_team_recent_data(match["h"]["title"], 2024)
+        away_xg = await prediction_system.get_team_recent_data(match["a"]["title"], 2024)
+        
+        # Generate AI prediction
+        ai_home, ai_away = prediction_system.predict_score(home_xg, away_xg)
+        
+        # Calculate probabilities
+        probabilities = prediction_system.calculate_probabilities(
+            prediction_system.calculate_expected_score(home_xg) * prediction_system.home_weight,
+            prediction_system.calculate_expected_score(away_xg)
+        )
+        
+
+        return render_template(
+            "prediction.html",
+            match=match,
+            home_xg=home_xg,
+            away_xg=away_xg,
+            ai_prediction={
+                "home": ai_home,
+                "away": ai_away
+            },
+            probabilities=probabilities
+        )
+        
+
+
+# Stats of users predictions in bottom of page
         
 @main.route("/result/<match_id>") #named differently to the html page it's using btw
 async def single_result(match_id):
