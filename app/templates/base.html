@@ -7,11 +7,8 @@
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
     </head>
     <body>
-<<<<<<< HEAD
         <header>Scoracle</header>
         {% block navbar %}
-=======
->>>>>>> ba51c219f02f347a060f414be34757b622ea8476
         <header>
             SCORACLE
             {%if session.username %}
@@ -37,6 +34,7 @@
                     <a href="{{ url_for('main.create_league') }}">Create League</a>
                     <a href="{{ url_for('main.join_league') }}">Join League</a>
                     <a href="{{ url_for('main.current_leagues') }}">Check Current Leagues</a>
+                </div>
             </li>
             <li class="dropdown">
                 <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">
@@ -61,7 +59,7 @@
             </li>
             {% endif %}
         </ul>
-
+        {% endblock %}
         <form action="{{ url_for('main.search') }}" method="get">
             <input type="text" name="query" placeholder="Search"> 
             <span class="search-icon">&#128269;</span>
