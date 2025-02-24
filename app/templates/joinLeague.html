@@ -2,11 +2,24 @@
 
 {% block main_content %}
 <div class="grid-container">
- 
-    <main>
-        <p>Main articles go here need to be figured later</p>
+  <h1>Join a Fantasy League</h1>
+  <main>
+    <form method="POST">
+      <label>Enter Private League Code:</label>
+      <input type="text" name="league_code" required>
+      <button type="submit">Join</button>
+    </form>
+  
+    <h1>Public Leagues</h1>
+        {% if leagues %}
+      <ul>
+        {% for league in leagues %}
+          <li>{{ league.name }} <a href="{{ url_for('main.join_league', league_code=league.id) }}">:      Join</a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No public leagues available.</p>
+    {% endif %}
     </main>
-
-      <footer>Footer</footer>
-    </div>
+</div>
 {% endblock %}
