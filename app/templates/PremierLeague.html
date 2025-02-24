@@ -30,6 +30,7 @@
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td>
+                          <img src="" class="team-crest" data-team="{{ row[0] }}">
                           <a href="{{ url_for('main.fixtures', team_name=row[0]) }}" class="team-link">
                               {{ row[0] }}
                           </a>

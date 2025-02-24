@@ -5,7 +5,7 @@
     <main>
         <div class="teams-container">
             <div class="team-home-team">
-                
+                <img src="" alt="Home-crest" class="team-crest" data-team="match.h.title">
                 <h2><a href="{{ url_for('main.fixtures', team_name=match.h.title) }}" class="team-link"> {{ match.h.title }} </a></h2>
             </div>
             
@@ -14,6 +14,7 @@
             </div>
 
             <div class="team-away-team">
+                <img src="" alt="Away-crest" class="team-crest" data-team="match.a.title">
                 <h2><a href="{{ url_for('main.fixtures', team_name=match.a.title) }}" class="team-link"> {{ match.a.title }} </a></h2>
             </div>
         </div>
