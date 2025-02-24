@@ -348,5 +348,19 @@ Could probably add more*/
     text-decoration: underline;
 }
 
+/* Team crests styling */
+/* General Styling for Team Crests */
+.team-crest {
+    width: 80px;  /* Adjust as needed */
+    height: 80px;
+    object-fit: contain;  /* Ensures proper aspect ratio */
+    vertical-align: middle;
+    margin-right: 10px;  /* Space between crest and text */
+    background-color: transparent;
+}
+
+
+
+
 /* CSS prediction */ 
 
