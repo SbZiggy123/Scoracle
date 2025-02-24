@@ -1,27 +1,75 @@
 {% extends "base.html" %}
 
 {% block main_content %}
+<script src="{{ url_for('static', filename='prediction.js') }}"></script>
 <div class="grid-container">
     <main>
+      <!-- More divs probably... Prediction page need a lot-->
+        <div class="match-header">
             <div class="teams-container">
-                <div class="team-home-team">
+                <div class="team-home">
                     <h2>{{ match.h.title }}</h2>
+                    <div class="team-form">
+                        <h4>Recent xG: {{ home_xg|map('float')|map('round', 2)|join(', ') }}</h4>
+                    </div>
                 </div>
                 
                 <div class="match-time">
                     {{ match.datetime.split(' ')[1][:5] }}
                 </div>
 
-                <div class="team-away-team">
+                <div class="team-away">
                     <h2>{{ match.a.title }}</h2>
+                    <div class="team-form">
+                        <h4>Recent xG: {{ away_xg|map('float')|map('round', 2)|join(', ') }}</h4>
+                    </div>
                 </div>
             </div>
             
             <div class="match-date">
                 {{ match.datetime.split(' ')[0] }}
             </div>
-            <p class="below">more stats here and AIs predictions too and the option to make the prediction on the game here on this page</p>
+        </div>
+
+        <div class="prediction-section">
+            <div class="ai-prediction">
+                <h3>AI Prediction</h3>
+                <p>{{ ai_prediction.home }} - {{ ai_prediction.away }}</p>
+                
+                <div class="probabilities">
+                    <p>Win: {{ probabilities.home_win }}%</p>
+                    <p>Draw: {{ probabilities.draw }}%</p>
+                    <p>Loss: {{ probabilities.away_win }}%</p>
+                </div>
+            </div>
+
+            <div class="user-prediction">
+                <h3>Your Prediction</h3>
+                <div class="score-inputs">
+                    <input type="number" id="home-score" min="0" max="20" value="0">
+                    <span>-</span>
+                    <input type="number" id="away-score" min="0" max="20" value="0">
+                </div>
+
+                <div class="prediction-odds">
+                    <p>Multiplier: <span id="odds-multiplier">1.00</span>x</p>
+                    <p>Potential Points:</p>
+                    <ul>
+                        <li>Exact Score: <span id="exact-points">100</span></li>
+                        <li>Correct Result: <span id="result-points">100</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </main>
     <footer>Footer</footer>
+</div>
+
+<!-- data attributes might wanna change base points and home weight I will do what I said in js  -->
+<div id="match-data" 
+    data-home-xg='{{ home_xg|tojson }}'
+    data-away-xg='{{ away_xg|tojson }}'
+    data-home-weight="1.2"
+    data-base-points="100">
 </div>
 {% endblock %}

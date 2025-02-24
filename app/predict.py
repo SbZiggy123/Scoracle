@@ -33,5 +33,7 @@ async def predictxG(team, opponent):
                 
         return round(finalxG)
 
+"""
 loop = asyncio.get_event_loop()
 loop.run_until_complete(predictxG("Manchester United"))
+"""
