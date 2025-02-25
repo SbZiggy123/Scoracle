@@ -9,7 +9,7 @@ class PredictionSystem:
         self.base_points = 100  # Base points for correct predictions... More for risky... To be used in the leagues
         
     # Creating a summed xg here of last 5 games which will be used to predict score
-    def calculate_expected_score(self, recent_xg):
+    def calculate_expected_score(self, recent_xg, xg_performance=1.0):
         """Calculate expected score based on recent xG data"""
         if not recent_xg:
             return 1.0  # Default if no data available
@@ -24,10 +24,11 @@ class PredictionSystem:
             weights = [w/total for w in weights] # make em add up to 1.0
         # zip pairs then multiply each pair, sum them and round 2 deci places
         weighted_xg = sum(xg * weight for xg, weight in zip(recent_xg, weights))
-        return round(weighted_xg, 2)
+        adjusted_xg = weighted_xg * xg_performance
+        return round(adjusted_xg, 2)
 
     async def get_team_recent_data(self, team_name, season):
-        """Get recent match data for a team directly from Understat"""
+        """Get recent match data for a team with opposition information"""
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
             results = await understat.get_team_results(team_name, season)
@@ -35,64 +36,151 @@ class PredictionSystem:
             # Sort by most recent
             recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
             
-            # Extract xG values based on home/away
+            # Extract xG values and opposition teams based on home/away
+            # Playing against a top team will affect the xg... Don't want that to affect the model TOO much
             recent_xg = []
+            opposition_teams = []
+            
             for match in recent_results:
                 if match["h"]["title"] == team_name:
                     recent_xg.append(float(match["xG"]["h"]))
+                    opposition_teams.append(match["a"]["title"])  # Opposition was away team
                 else:
                     recent_xg.append(float(match["xG"]["a"]))
+                    opposition_teams.append(match["h"]["title"])  # Opposition was home team
                     
-            return recent_xg
+            return recent_xg, opposition_teams
     
-    def predict_score(self, home_xg, away_xg):
-        """Generate AI prediction for the match"""
-        home_expected = self.calculate_expected_score(home_xg) * self.home_weight
-        away_expected = self.calculate_expected_score(away_xg)
+    async def get_league_positions(self, season):
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            table = await understat.get_league_table("epl", season, with_headers=False)
+            
+            positions = {}
+            for position, team_data in enumerate(table):
+                team_name = team_data[0]
+                positions[team_name] = position + 1
+                
+            return positions
         
-        # Round to nearest likely football score
-        home_score = round(home_expected)
-        away_score = round(away_expected)
+    def adjust_for_opposition(self, expected_score, opposition_positions, league_size=20):
+        if not opposition_positions:
+            return expected_score
+            
+        # Calculate average position of recent opponents
+        avg_position = sum(opposition_positions) / len(opposition_positions)
         
-        return home_score, away_score
-
+        # Position factor: 
+        position_factor = 1.0 + (0.4 * ((league_size/2) - avg_position) / league_size)
+        
+        return round(expected_score * position_factor, 2)
+    
+    async def get_team_xg_performance(self, team_name, season):
+        """Function to see whether they outperform or underperform their xg"""
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            results = await understat.get_team_results(team_name, season)
+            
+            total_goals = 0
+            total_xg = 0
+            
+            for match in results:
+                if match["h"]["title"] == team_name:
+                    if match["goals"]["h"] is not None and match["xG"]["h"] is not None:
+                        total_goals += int(match["goals"]["h"])
+                        total_xg += float(match["xG"]["h"])
+                else:
+                    if match["goals"]["a"] is not None and match["xG"]["a"] is not None:
+                        total_goals += int(match["goals"]["a"])
+                        total_xg += float(match["xG"]["a"])
+            
+            # if not enough data
+            if total_xg < 1.0:
+                return 1.0
+                
+            # Calculate ratio and cap between 0.7 and 1.3 
+            ratio = total_goals / total_xg
+            return max(0.7, min(1.3, ratio))
+        
+    # Moving route stuff to here
+    async def predict_match(self, match_id, season):
+        """Generate match prediction with all factors"""
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            
+            # Get match details
+            fixtures = await understat.get_league_fixtures("epl", season)
+            match = next((fixture for fixture in fixtures if fixture["id"] == match_id), None)
+            
+            if not match:
+                return None
+                
+            home_team = match["h"]["title"]
+            away_team = match["a"]["title"]
+            
+            # Get recent xG data for both teams with opposition information
+            home_xg, home_opposition = await self.get_team_recent_data(home_team, season)
+            away_xg, away_opposition = await self.get_team_recent_data(away_team, season)
+            
+            # Get xG performance ratios (how efficiently teams convert xG to actual goals)
+            home_xg_performance = await self.get_team_xg_performance(home_team, season)
+            away_xg_performance = await self.get_team_xg_performance(away_team, season)
+            
+            # Get league positions for opposition adjustment
+            league_positions = await self.get_league_positions(season)
+            
+            # Calculate base expected scores with xG performance adjustment
+            home_expected = self.calculate_expected_score(home_xg, home_xg_performance) * self.home_weight
+            away_expected = self.calculate_expected_score(away_xg, away_xg_performance)
+            
+            # Adjust for opposition strength
+            home_opposition_positions = [league_positions.get(team, 10) for team in home_opposition]
+            away_opposition_positions = [league_positions.get(team, 10) for team in away_opposition]
+            
+            home_expected = self.adjust_for_opposition(home_expected, home_opposition_positions)
+            away_expected = self.adjust_for_opposition(away_expected, away_opposition_positions)
+            
+            # Round score for AI prediction
+            home_score = round(home_expected)
+            away_score = round(away_expected)
+            
+            # Calculate win probabilities
+            probabilities = self.calculate_probabilities(home_expected, away_expected)
+            
+            return {
+                "match": match,
+                "home_xg": home_xg,
+                "away_xg": away_xg,
+                "home_xg_performance": round(home_xg_performance, 2),
+                "away_xg_performance": round(away_xg_performance, 2),
+                "home_opposition": home_opposition,
+                "away_opposition": away_opposition,
+                "home_expected": home_expected,
+                "away_expected": away_expected,
+                "prediction": {"home": home_score, "away": away_score},
+                "probabilities": probabilities
+            }
     """User will alter his bet live IN the webapp. It NEEDS to update odds then and there... This will be moved to js"""
-
-    def calculate_odds(self, home_xg, away_xg, user_prediction):
-        """Calculate betting odds and potential points"""
-        # Calculate expected scores
-        home_expected = self.calculate_expected_score(home_xg) * self.home_weight
-        away_expected = self.calculate_expected_score(away_xg)
         
-        # AI prediction... Just rounding expected
-        ai_home, ai_away = self.predict_score(home_xg, away_xg)
-        
-        # Calculate how "unlikely" the user's prediction is compared to expected values
-        # We are ccomparing this to expected score NOT AI score
+        # Server will use this when adding to DB... JS mirrors it
+    def calculate_points(self, home_expected, away_expected, user_prediction):
+        """Calculate points and multiplier for user prediction"""
+        # Calculate how "unlikely" the user's prediction is
         home_diff = abs(user_prediction[0] - home_expected)
         away_diff = abs(user_prediction[1] - away_expected)
         total_diff = home_diff + away_diff
         
-        # multiplier for unlikely predictions.. Idk what exactly to put but crazy bets gotta be more.
-        odds_multiplier = 1.5 ** total_diff
+        # Apply dampening for extreme predictions
+        if total_diff > 4:
+            total_diff = 4 + (total_diff - 4) * 0.5
+            
         
-        # Calculate potential points
-        """For correct_result... Should be some formula not based on their score but instead their team they chose to win"""
-        potential_points = {
-            "exact_score": int(self.base_points * odds_multiplier),  # Exact score
-            "correct_result": int(self.base_points),  # They get base points for correct score for now 
-            "wrong_result": 0  # Wrong result
-        }
-        
-        # Calculate result probabilities
-        probabilities = self.calculate_probabilities(home_expected, away_expected)
+        odds_multiplier = min(1.0 + (total_diff * 0.5), 8.0)
         
         return {
-            "ai_prediction": {"home": ai_home, "away": ai_away},
-            "expected_scores": {"home": home_expected, "away": away_expected},
-            "odds_multiplier": round(odds_multiplier, 2),
-            "potential_points": potential_points,
-            "probabilities": probabilities
+            "multiplier": round(odds_multiplier, 2),
+            "exact_score": int(self.base_points * odds_multiplier),
+            "correct_result": int(self.base_points)
         }
     
     def calculate_probabilities(self, home_expected, away_expected):
@@ -107,6 +195,6 @@ class PredictionSystem:
             "draw": round(draw * 100, 1),
             "away_win": round(away_win * 100, 1)
         }
-        
-        
-# Player prediction here
+    
+    
+    
