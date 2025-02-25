@@ -19,6 +19,7 @@
               </a>
                 <div class="match-teams">
                     <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                        <img src="" class="team-crest" data-team="{{ result.h.title }}">
                         <span class="team-name {% if result.h.title == team_name %}highlighted-team{% endif %}">
                             {{ result.h.title }}
                         </span>
@@ -28,6 +29,7 @@
                         <span class="team-name {% if result.a.title == team_name %}highlighted-team{% endif %}">
                             {{ result.a.title }}
                         </span>
+                        <img src="" class="team-crest" data-team="{{ result.a.title }}">
                     </a>
                 </div>
 
@@ -46,6 +48,7 @@
             </a>
                 <div class="match-teams">
                     <a href="{{ url_for('main.fixtures', team_name=fixture.h.title) }}" class="team-link">
+                        <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
                         <span class="team-name {% if fixture.h.title == team_name %}highlighted-team{% endif %}">
                             {{ fixture.h.title }}
                         </span>
@@ -55,6 +58,7 @@
                         <span class="team-name {% if fixture.a.title == team_name %}highlighted-team{% endif %}">
                             {{ fixture.a.title }}
                         </span>
+                        <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
                     </a>
                 </div>
 
