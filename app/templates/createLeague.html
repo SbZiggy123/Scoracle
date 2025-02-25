@@ -4,15 +4,23 @@
 <div class="grid-container">
     <h1>Create Leagues</h1>
     <main>
-        <form>
+        <form method="POST" action="{{ url_for('main.create_league') }}">
           <label>League Name</label>
-          <input type="text" id="leagueName" required>
+          <input type="text" name="league_name" id="leagueName" required>
+
           <label>Type of League</label>
-          <select name="leagueType" id="leagueType" required>
+          <select name="league_type" id="leagueType" required>
             <option value="classic">Classic Scoring</option>
             <option value="head2head">Head to Head</option>
-            
           </select>
+
+          <label>Privacy</label>
+          <select name="privacy" id="privacy" required>
+            <option value="Public">Public League</option>
+            <option value="Private">Private League</option>
+          </select>
+
+          <button type="submit">Create League</button>
         </form>
 
     </main>

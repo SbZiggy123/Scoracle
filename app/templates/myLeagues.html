@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+ 
+    <main>
+        <h1>My Leagues</h1>
+        <ul>
+            {% for league in leagues %}
+            <li>{{ league.name }} ({{ league.players }} players)</li>
+            {% endfor %}
+        </ul>
+    </main>
+    <footer>Footer</footer>
+</div>
+{% endblock %}
