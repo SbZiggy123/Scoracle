@@ -29,3 +29,20 @@ document.addEventListener("DOMContentLoaded", function(){
 
 
     });
+
+
+document.addEventListener("DOMContentLoaded",function(){
+    function formatTeamName(teamName) {
+        return teamName.toLowerCase().replace(/\s/g, "_") + ".png";
+    }
+    document.querySelectorAll("[data-team]").forEach(teamElement =>{
+        let teamName = teamElement.dataset.team.trim();
+        let crestImg = teamElement
+
+        if(teamName){
+            let crestPath = `/static/${formatTeamName(teamName)}`;
+            crestImg.src = crestPath; 
+        }
+
+    });
+});
