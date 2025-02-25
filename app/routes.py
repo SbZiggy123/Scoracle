@@ -75,45 +75,29 @@ from .prediction_model import PredictionSystem
 async def prediction(match_id):
     # Create a prediction system instance
     prediction_system = PredictionSystem()
-    
-    async with aiohttp.ClientSession() as session:
-        understat = Understat(session)
+    prediction_data = await prediction_system.predict_match(match_id, 2024)
+    if not prediction_data:
+        flash("Match not found", "error")
+        return redirect(url_for("main.fixtures"))
         
-        # Get match details
-        fixtures = await understat.get_league_fixtures("epl", 2024)
-        match = next((fixture for fixture in fixtures if fixture["id"] == match_id), None)
         
-        # Switched to initial test here easier to read
-        if not match:
-            flash("Match not found", "error")
-            return redirect(url_for("main.fixtures"))
-        
-        """could move this to model later"""
-        # Get recent xG data for both teams directly from Understat
-        home_xg = await prediction_system.get_team_recent_data(match["h"]["title"], 2024)
-        away_xg = await prediction_system.get_team_recent_data(match["a"]["title"], 2024)
-        
-        # Generate AI prediction
-        ai_home, ai_away = prediction_system.predict_score(home_xg, away_xg)
-        
-        # Calculate probabilities
-        probabilities = prediction_system.calculate_probabilities(
-            prediction_system.calculate_expected_score(home_xg) * prediction_system.home_weight,
-            prediction_system.calculate_expected_score(away_xg)
-        )
-        
+    # if request.method == 'POST' etc....
 
-        return render_template(
-            "prediction.html",
-            match=match,
-            home_xg=home_xg,
-            away_xg=away_xg,
-            ai_prediction={
-                "home": ai_home,
-                "away": ai_away
-            },
-            probabilities=probabilities
-        )
+    return render_template(
+        "prediction.html",
+        match=prediction_data['match'],
+        home_xg=prediction_data['home_xg'],
+        away_xg=prediction_data['away_xg'],
+        ai_prediction=prediction_data['prediction'],
+        probabilities=prediction_data['probabilities'],
+        home_xg_performance=prediction_data['home_xg_performance'],
+        away_xg_performance=prediction_data['away_xg_performance'],
+        home_opposition=prediction_data['home_opposition'],
+        away_opposition=prediction_data['away_opposition'],
+        home_expected=prediction_data['home_expected'],
+        away_expected=prediction_data['away_expected'],
+        league_positions=await prediction_system.get_league_positions(2024)
+    )
         
 
 

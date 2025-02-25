@@ -65,11 +65,11 @@
     <footer>Footer</footer>
 </div>
 
-<!-- data attributes might wanna change base points and home weight I will do what I said in js  -->
+<!-- data attributes might wanna change base points and home weight-->
 <div id="match-data" 
-    data-home-xg='{{ home_xg|tojson }}'
-    data-away-xg='{{ away_xg|tojson }}'
-    data-home-weight="1.2"
+    data-home-expected="{{ home_expected }}"
+    data-away-expected="{{ away_expected }}"
     data-base-points="100">
+</div>
 </div>
 {% endblock %}
