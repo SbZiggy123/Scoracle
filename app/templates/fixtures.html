@@ -28,8 +28,8 @@
                     <a href="{{ url_for('main.fixtures', team_name=result.a.title) }}" class="team-link">
                         <span class="team-name {% if result.a.title == team_name %}highlighted-team{% endif %}">
                             {{ result.a.title }}
-                        </span>
-                        <img src="" class="team-crest" data-team="{{ result.a.title }}">
+                    </span>
+                    <img src="" class="team-crest" data-team="{{ result.a.title }}">
                     </a>
                 </div>
 
@@ -40,7 +40,7 @@
         <h2 class="section-title">Upcoming Fixtures</h2>
         <div class="fixtures-container">
             {% for fixture in upcoming_fixtures %}
-            <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
+            <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">  
               <div class="match-date">
                 {{ fixture.datetime.split(' ')[0] }}
                 <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
