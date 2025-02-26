@@ -25,13 +25,13 @@ def init_db():
             # Create users table
             c.execute('''
                 CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
+                    username TEXT PRIMARY KEY UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
+                    leagues TEXT DEFAULT '',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            # fantasy league table(more to be added after log in is sorted)
+            # fantasy league table
             c.execute('''
                 CREATE TABLE IF NOT EXISTS fantasyLeagues (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +39,7 @@ def init_db():
                     league_type TEXT CHECK(league_type IN ('classic', 'head2head')) NOT NULL,
                     privacy TEXT CHECK(privacy IN ('Public', 'Private')) NOT NULL,
                     league_code TEXT UNIQUE,
+                    members TEXT DEFAULT '',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -104,8 +105,8 @@ def user_exists(username):
             conn.close()
     return False
 
-def add_fantasy_league(league_name, league_type, privacy):
-    """Add a new fantasy league to the database. adds code if its private. otherwise doesnt."""
+def add_fantasy_league(league_name, league_type, privacy, username):
+    """Add a new fantasy league and assign the creator as the first member."""
     conn = get_db_connection()
     if conn is not None:
         try:
@@ -113,9 +114,17 @@ def add_fantasy_league(league_name, league_type, privacy):
 
             c = conn.cursor()
             c.execute('''
-                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code)
-                VALUES (?, ?, ?, ?)
-            ''', (league_name, league_type, privacy, league_code))
+                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (league_name, league_type, privacy, league_code, str(username)))
+            
+            league_id = c.lastrowid
+
+            c.execute("SELECT leagues FROM users WHERE username = ?", (username,))
+            user_leagues = c.fetchone()[0]
+            updated_leagues = f"{user_leagues},{league_id}".strip(",")
+            c.execute("UPDATE users SET leagues = ? WHERE username = ?", (updated_leagues, username))
+
             conn.commit()
             return league_code if league_code else True
         except Error as e:
@@ -180,3 +189,77 @@ def get_public_leagues():
 def generate_league_code():
     """Generate a random 6-character league code."""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+def get_user_leagues(username):
+    """Fetch all leagues the user is a part of."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT leagues FROM users WHERE username = ?", (username,))
+            result = c.fetchone()
+
+            if not result or not result[0]:
+                return []
+
+            league_ids = [int(x.strip()) for x in result[0].split(",") if x.strip() != ""]
+
+            if not league_ids:
+                return []
+
+            placeholders = ','.join(['?'] * len(league_ids))
+            query = f"SELECT id, league_name FROM fantasyLeagues WHERE id IN ({placeholders})"
+            c.execute(query, league_ids)
+            user_leagues = [{"id": row[0], "name": row[1]} for row in c.fetchall()]
+
+            return user_leagues
+        except Error as e:
+            print(f"Error fetching user's leagues: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
+
+def is_user_in_league(username, league_id):
+    """Check if a user is already in a league."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
+            members = c.fetchone()[0]
+            if str(username) in members.split(","):
+                return True
+            return False
+        except Error as e:
+            print(f"Error checking user in league: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+def add_user_to_league(username, league_id):
+    """Add a user to a league and update both users and fantasyLeagues tables."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+
+            c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
+            members = c.fetchone()[0]
+            updated_members = f"{members},{username}".strip(",")
+            c.execute("UPDATE fantasyLeagues SET members = ? WHERE id = ?", (updated_members, league_id))
+
+            c.execute("SELECT leagues FROM users WHERE username = ?", (username,))
+            user_leagues = c.fetchone()[0]
+            updated_leagues = f"{user_leagues},{league_id}".strip(",")
+            c.execute("UPDATE users SET leagues = ? WHERE username = ?", (updated_leagues, username))
+
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error adding user to league: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
