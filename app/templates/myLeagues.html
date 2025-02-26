@@ -2,15 +2,23 @@
 
 {% block main_content %}
 <div class="grid-container">
- 
     <main>
         <h1>My Leagues</h1>
-        <ul>
-            {% for league in leagues %}
-            <li>{{ league.name }} ({{ league.players }} players)</li>
-            {% endfor %}
-        </ul>
+        
+        {% if leagues %}
+            <ul>
+                {% for league in leagues %}
+                    <li>
+                        <a href="{{ url_for('main.league', league_id=league.id) }}">
+                            {{ league.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>You are not in any leagues yet.</p>
+        {% endif %}
     </main>
-    <footer>Footer</footer>
+
 </div>
 {% endblock %}

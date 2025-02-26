@@ -3,7 +3,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
-from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, get_league_by_id
+from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league
 from .predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -40,76 +40,124 @@ async def premier_league():
                                recent_results=recent_results,
                                upcoming_fixtures=upcoming_fixtures)
 
+
 @main.route('/createLeague', methods=["GET", "POST"])
 def create_league():
+    if "username" not in session:
+        flash("You must be logged in to create a league")
+        return redirect(url_for("main.login"))
+
     if request.method == "POST":
         league_name = request.form.get("league_name")
         league_type = request.form.get("league_type")
         privacy = request.form.get("privacy")
+        username = session["username"]
 
         if not league_name or not league_type or not privacy:
-            flash("All fields are required!", "danger")
+            flash("All fields are required")
             return redirect(url_for("main.create_league"))
-        
-        success = add_fantasy_league(league_name, league_type, privacy)
-        
+
+        success = add_fantasy_league(league_name, league_type, privacy, username)
+
         if success:
             if privacy == "Private":
-                flash(f"League '{league_name}' created successfully! Your private code: {success}", "success")
+                flash(f"League '{league_name}' created successfully! Your private code: {success}")
             else:
-                flash(f"League '{league_name}' created successfully!", "success")
+                flash(f"League '{league_name}' created successfully")
         else:
             flash("Error creating league. Please try again.", "danger")
 
         return redirect(url_for("main.create_league"))
-    
+
     return render_template("createLeague.html")
+
 
 @main.route("/joinLeague", methods=["GET", "POST"])
 def join_league():
+    if "username" not in session:
+        flash("You must be logged in to join a league")
+        return redirect(url_for("main.login"))
+
+    username = session["username"]
+
     if request.method == "POST":
         league_code = request.form.get("league_code")
-
         league = get_league_by_code(league_code)
 
         if league:
-            flash(f"Joined private league: {league['league_name']}")
+            league_id = league["id"]
+
+            if is_user_in_league(username, league_id):
+                flash("You are already a member of this league")
+            else:
+                if add_user_to_league(username, league_id):
+                    flash(f"Successfully joined private league: {league['league_name']}", "success")
+                else:
+                    flash("Error joining league. Try again")
         else:
             flash("Invalid league code")
 
         return redirect(url_for("main.join_league"))
 
-    # Get list of public leagues
     public_leagues = get_public_leagues()
-    return render_template("joinLeague.html", leagues=public_leagues)
+    user_leagues_list = get_user_leagues(username)
+    user_league_ids = [str(league['id']) for league in user_leagues_list]
 
+    return render_template("joinLeague.html", leagues=public_leagues, user_leagues=user_league_ids)
 
+#called when user presses the join button on public league
 @main.route("/joinPublicLeague/<int:league_id>", methods=["POST"])
 def join_public_league(league_id):
+    if "username" not in session:
+        flash("You must be logged in to join a league")
+        return redirect(url_for("main.login"))
+
+    username = session["username"]
     league = get_league_by_id(league_id)
 
     if league:
-        flash(f"Joined public league: {league['league_name']}!", "success")
+        if is_user_in_league(username, league_id):
+            flash("You are already a member of this league")
+        else:
+            if add_user_to_league(username, league_id):
+                flash(f"Successfully joined league: {league['league_name']}")
+            else:
+                flash("Error joining league")
     else:
         flash("League not found")
 
     return redirect(url_for("main.join_league"))
 
-
+#called when user clicks on league name
 @main.route("/league/<int:league_id>")
 def league(league_id):
-    """View a specific league after joining it."""
     league = get_league_by_id(league_id)
-
     if not league:
-        flash("League not found!", "danger")
+        flash("League not found")
         return redirect(url_for("main.join_league"))
+
+    members_str = league.get("members")
+    if members_str:
+        member_list = [x.strip() for x in members_str.split(",") if x.strip()]
+    else:
+        member_list = []
+    league["member_list"] = member_list
 
     return render_template("league.html", league=league)
 
+
 @main.route('/myLeagues')
 def my_leagues():
-    return render_template("myLeagues.html")
+    if "username" not in session:
+        flash("You must be logged in to view your leagues!")
+        return redirect(url_for("main.login"))
+
+    username = session["username"]
+    user_leagues = get_user_leagues(username)
+
+    return render_template("myLeagues.html", leagues=user_leagues)
+
+
 
 @main.route('/fixtures')
 @main.route("/fixtures/<team_name>")
