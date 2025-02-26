@@ -3,7 +3,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo
-from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues
+from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, get_league_by_id
 from .predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -62,8 +62,50 @@ def create_league():
             flash("Error creating league. Please try again.", "danger")
 
         return redirect(url_for("main.create_league"))
-
+    
     return render_template("createLeague.html")
+
+@main.route("/joinLeague", methods=["GET", "POST"])
+def join_league():
+    if request.method == "POST":
+        league_code = request.form.get("league_code")
+
+        league = get_league_by_code(league_code)
+
+        if league:
+            flash(f"Joined private league: {league['league_name']}")
+        else:
+            flash("Invalid league code")
+
+        return redirect(url_for("main.join_league"))
+
+    # Get list of public leagues
+    public_leagues = get_public_leagues()
+    return render_template("joinLeague.html", leagues=public_leagues)
+
+
+@main.route("/joinPublicLeague/<int:league_id>", methods=["POST"])
+def join_public_league(league_id):
+    league = get_league_by_id(league_id)
+
+    if league:
+        flash(f"Joined public league: {league['league_name']}!", "success")
+    else:
+        flash("League not found")
+
+    return redirect(url_for("main.join_league"))
+
+
+@main.route("/league/<int:league_id>")
+def league(league_id):
+    """View a specific league after joining it."""
+    league = get_league_by_id(league_id)
+
+    if not league:
+        flash("League not found!", "danger")
+        return redirect(url_for("main.join_league"))
+
+    return render_template("league.html", league=league)
 
 @main.route('/myLeagues')
 def my_leagues():
@@ -167,26 +209,6 @@ async def single_result(match_id):
             flash("Match not found", "error")
             return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
         
-
-@main.route('/joinLeague', methods=['GET', 'POST'])
-def join_league():
-    if request.method == "POST":
-        league_code = request.form.get("league_code")
-
-        # Check if the league exists by its code
-        league = get_league_by_code(league_code)
-
-        if league:
-            flash(f"Joined private league: {league['league_name']}!", "success")
-        else:
-            flash("Invalid league code!", "danger")
-
-        return redirect(url_for("main.join_league"))
-
-    # Get list of public leagues
-    public_leagues = get_public_leagues()
-
-    return render_template("joinLeague.html", leagues=public_leagues)
 
 # might not need this cos we have singleResult (takes match ID as param) 
 # and also fixtures and results of a specific team in fixtures.html maybe rename to fixturesAndResults

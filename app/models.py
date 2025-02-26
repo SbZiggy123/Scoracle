@@ -143,6 +143,24 @@ def get_league_by_code(league_code):
             conn.close()
     return None
 
+def get_league_by_id(league_id):
+    """Fetch league details by ID."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT * FROM fantasyLeagues WHERE id = ?", (league_id,))
+            league = c.fetchone()
+            if league:
+                return dict(league)
+            return None
+        except Error as e:
+            print(f"Error fetching league: {e}")
+            return None
+        finally:
+            conn.close()
+    return None
+
 def get_public_leagues():
     """Fetch all public fantasy leagues from the database."""
     conn = get_db_connection()

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+  <h1>{{ league.league_name }}</h1>
+  <main>
+    <p>Type: {{ league.league_type }}</p>
+    <p>Privacy: {{ league.privacy }}</p>
+    <p>Created: {{ league.created_at }}</p>
+
+    <h2>Fantasy Teams</h2>
+    <ul>
+        <li>teamlist
+        </li>
+    </ul>
+
+  </main>
+</div>
+{% endblock %}
