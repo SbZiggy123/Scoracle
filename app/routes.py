@@ -1,9 +1,9 @@
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_session import Session
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo
-from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues
+from wtforms import StringField, PasswordField, SubmitField, IntegerField
+from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
+from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions
 from .predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -89,11 +89,22 @@ async def fixtures(team_name=None):
             )
         return render_template("fixtures.html")
 
+class PredictionForm(FlaskForm):
+    home_score = IntegerField('Home Score', validators=[
+        DataRequired(),
+        NumberRange(min=0, max=20, message="Score must be between 0 and 20")
+    ])
+    away_score = IntegerField('Away Score', validators=[
+        DataRequired(), 
+        NumberRange(min=0, max=20, message="Score must be between 0 and 20")
+    ])
+    submit = SubmitField('Save Prediction')
 
 from .prediction_model import PredictionSystem
 
 @main.route('/prediction/<match_id>', methods=['GET', 'POST'])
 async def prediction(match_id):
+    form = PredictionForm()
     # Create a prediction system instance
     prediction_system = PredictionSystem()
     prediction_data = await prediction_system.predict_match(match_id, 2024)
@@ -101,11 +112,40 @@ async def prediction(match_id):
         flash("Match not found", "error")
         return redirect(url_for("main.fixtures"))
         
-        
-    # if request.method == 'POST' etc....
+    user_prediction = None
+    
+    if "username" in session:
+        user = get_user(session["username"])
+        if user:
+            user_predictions = get_user_predictions(user["id"])
+            for pred in user_predictions:
+                if pred["match_id"] == match_id:
+                    user_prediction = {"home_score": pred["home_score"], "away_score": pred["away_score"]}
 
+                    if not form.home_score.data:
+                        form.home_score.data = pred["home_score"]
+                    if not form.away_score.data:
+                        form.away_score.data = pred["away_score"]
+                    break
+    
+    # Handle form submission 
+    if "username" in session and form.validate_on_submit():
+        user = get_user(session["username"])
+        if not user:
+            flash("User not found.", "danger")
+            return redirect(url_for("main.home"))
+        home_score = form.home_score.data
+        away_score = form.away_score.data
+    
+        if save_prediction(user["id"], match_id, home_score, away_score):
+            flash("Your prediction has been saved!", "success")
+            user_prediction = {"home_score": home_score, "away_score": away_score}
+        else:
+            flash("Failed to save your prediction. Please try again.", "danger")
+                
     return render_template(
         "prediction.html",
+        form=form,
         match=prediction_data['match'],
         home_xg=prediction_data['home_xg'],
         away_xg=prediction_data['away_xg'],
@@ -117,11 +157,11 @@ async def prediction(match_id):
         away_opposition=prediction_data['away_opposition'],
         home_expected=prediction_data['home_expected'],
         away_expected=prediction_data['away_expected'],
-        league_positions=await prediction_system.get_league_positions(2024)
+        league_positions=await prediction_system.get_league_positions(2024),
+        user_prediction=user_prediction
     )
+
         
-
-
 # Stats of users predictions in bottom of page
         
 @main.route("/result/<match_id>") #named differently to the html page it's using btw

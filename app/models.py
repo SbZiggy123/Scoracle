@@ -42,6 +42,24 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            # User predictions
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS user_predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    match_id TEXT NOT NULL,
+                    home_score INTEGER NOT NULL,
+                    away_score INTEGER NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    points_earned INTEGER DEFAULT NULL,
+                    exact_score BOOLEAN DEFAULT FALSE,
+                    correct_result BOOLEAN DEFAULT FALSE,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    UNIQUE (user_id, match_id)
+                )
+            ''')
+            
+            """League members go here"""
             conn.commit()
         except Error as e:
             print(f"Error creating database: {e}")
@@ -84,6 +102,24 @@ def get_user(username):
             conn.close()
     return None
 
+def get_user_by_id(user_id):
+    """Retrieve a user from the database by ID."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            user = c.fetchone()
+            if user:
+                return dict(user)
+            return None
+        except Error as e:
+            print(f"Error retrieving user: {e}")
+            return None
+        finally:
+            conn.close()
+    return None
+
 def verify_password(username, password):
     user = get_user(username)
     if user:
@@ -103,6 +139,65 @@ def user_exists(username):
         finally:
             conn.close()
     return False
+
+""" USER PREDICTIONS FOR GAME SCORES"""
+def save_prediction(user_id, match_id, home_score, away_score):
+    """Save or update a user's prediction for a match."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            # Check if prediction already exists
+            c.execute('SELECT id FROM user_predictions WHERE user_id = ? AND match_id = ?',
+                     (user_id, match_id))
+            existing = c.fetchone()
+            
+            if existing:
+                # Update
+                c.execute('''
+                    UPDATE user_predictions 
+                    SET home_score = ?, away_score = ?, created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (home_score, away_score, existing[0]))
+            else:
+                # Insert 
+                c.execute('''
+                    INSERT INTO user_predictions (user_id, match_id, home_score, away_score)
+                    VALUES (?, ?, ?, ?)
+                ''', (user_id, match_id, home_score, away_score))
+            
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error saving prediction: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+def get_user_predictions(user_id, limit=10):
+    """Get the most recent predictions for a user."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute('''
+                SELECT * FROM user_predictions
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            ''', (user_id, limit))
+            predictions = c.fetchall()
+            return [dict(prediction) for prediction in predictions]
+        except Error as e:
+            print(f"Error getting user predictions: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
+
+
+"""FANTASY LEAGUE"""
 
 def add_fantasy_league(league_name, league_type, privacy):
     """Add a new fantasy league to the database. adds code if its private. otherwise doesnt."""

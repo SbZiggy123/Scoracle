@@ -47,21 +47,49 @@
 
             <div class="user-prediction">
                 <h3>Your Prediction</h3>
-                <div class="score-inputs">
-                    <input type="number" id="home-score" min="0" max="20" value="0">
-                    <span>-</span>
-                    <input type="number" id="away-score" min="0" max="20" value="0">
-                </div>
+                
+                {% if session.username %}
+                    <form id="prediction-form" method="POST" action="{{ url_for('main.prediction', match_id=match.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="score-inputs">
+                            <div class="form-field">
+                                {{ form.home_score(id="home-score", min=0, max=20, value=user_prediction.home_score if user_prediction else 0) }}
+                                {% if form.home_score.errors %}
+                                    <div class="error">{{ form.home_score.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <span>-</span>
+                            <div class="form-field">
+                                {{ form.away_score(id="away-score", min=0, max=20, value=user_prediction.away_score if user_prediction else 0) }}
+                                {% if form.away_score.errors %}
+                                    <div class="error">{{ form.away_score.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
 
-                <div class="prediction-odds">
-                    <p>Multiplier: <span id="odds-multiplier">1.00</span>x</p>
-                    <p>Potential Points:</p>
-                    <ul>
-                        <li>Exact Score: <span id="exact-points">100</span></li>
-                        <li>Correct Result: <span id="result-points">100</span></li>
-                    </ul>
-                </div>
+                        <div class="prediction-odds">
+                            <p>Multiplier: <span id="odds-multiplier">1.00</span>x</p>
+                            <p>Potential Points:</p>
+                            <ul>
+                                <li>Exact Score: <span id="exact-points">100</span></li>
+                                <li>Correct Result: <span id="result-points">100</span></li>
+                            </ul>
+                        </div>
+                        
+                        {{ form.submit(class="submit-prediction") }}
+                        
+                        {% if user_prediction %}
+                            <div class="prediction-status">
+                                <p>You have already predicted {{ user_prediction.home_score }} - {{ user_prediction.away_score }}</p>
+                            </div>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <p class="login-prompt">Please <a href="{{ url_for('main.login') }}">login</a> to save your prediction</p>
+                {% endif %}
             </div>
+            
         </div>
     </main>
     <footer>Footer</footer>
