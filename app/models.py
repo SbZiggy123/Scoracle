@@ -25,6 +25,7 @@ def init_db():
             # Create users table
             c.execute('''
                 CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT PRIMARY KEY UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     leagues TEXT DEFAULT '',
