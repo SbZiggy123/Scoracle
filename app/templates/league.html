@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+  <h1>{{ league.league_name }}</h1>
+  <main>
+    <p>Type: {{ league.league_type }}</p>
+    <p>Privacy: {{ league.privacy }}</p>
+    {% if league.privacy == "Private" and league.league_code %}
+      <p>League Code: {{ league.league_code }}</p>
+    {% endif %}
+    <p>Created: {{ league.created_at }}</p>
+
+    <h2>Members</h2>
+    {% if league.member_list %}
+      <ul>
+        {% for member in league.member_list %}
+          <li>{{ member }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No members yet.</p>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}
