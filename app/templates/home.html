@@ -4,12 +4,37 @@
     <div class="grid-container">
  
     <main>
+      <div class="dash-head">
         <h1>Welcome to Scoracle, {{ username }}</h1>
-        <p>Personal Dashboard here on this page for {{ username }} maybe</p>
-        <p>Main articles go here need to be figured later</p>
-        <p>You can click on teams</p>
-        <p>You can click on dates of fixtures to go to prediction page</p>
-    </main>
+        {% if leagues %}
+          <p>You are in {{ totalLeagues }} Leagues!</p>
+          <p></p>
+        {% else %}
+          <p>You are not in any leagues yet.</p>
+          <p>Look for leagues <a href="{{ url_for('main.join_league') }}">here</a>!</p>
+          <p>Create a league <a href="{{ url_for('main.create_league') }}">here</a>!</p>
+        {% endif %}
+        <img src="" alt="Profile picture">
+      </div> 
+
+      <div class="update">
+        <h1>Update</h1>
+        <form method="POST" action="{{ url_for('main.update_user') }}"></form>
+          <label>Username</label>
+          <input type="text" name="username" id="new_username">
+
+          <label>Favourite Team</label>
+          <select name="favourite_team" id="favourite_team">
+            {% for team in team_names %}
+            <option value="{{ team }}">{{ team }}</option>
+            {% endfor %}
+          </select>
+
+
+      </div>
+            
+        <a href="{{ url_for('main.logout') }}">Logout</a>
+      </main>
 
       <footer>Footer</footer>
     </div>

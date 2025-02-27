@@ -4,7 +4,6 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league
-from .predict import predictxG
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -373,6 +372,15 @@ def search():
 
 @main.route("/home")
 def home():
+    '''Inprogress'''
     if "username" not in session:
         return redirect(url_for("main.login"))
-    return render_template("home.html", username=session["username"])
+    else:
+        user = get_user(session["username"])
+        totalLeagues = len(get_user_leagues(user))
+        teams = Understat.get_teams("epl", 2024)
+        team_names = []
+        for team in teams:
+            team_name = team["title"]
+            team_names.append(team_name)
+    return render_template("home.html", totalLeagues=totalLeagues, username=session["username"], team_names=team_names)
