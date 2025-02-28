@@ -85,6 +85,10 @@
                             </div>
                         {% endif %}
                     </form>
+
+                    <div class="bets-link">
+                        <a href="{{ url_for('main.yourBets') }}" class="view-bets-link">View All Your Bets</a>
+                    </div>
                 {% else %}
                     <p class="login-prompt">Please <a href="{{ url_for('main.login') }}">login</a> to save your prediction</p>
                 {% endif %}
@@ -101,5 +105,5 @@
     data-away-expected="{{ away_expected }}"
     data-base-points="100">
 </div>
-</div>
+
 {% endblock %}

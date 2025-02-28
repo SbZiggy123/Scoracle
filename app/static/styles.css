@@ -547,3 +547,45 @@ body {
 
 /* CSS prediction */ 
 
+/* YOUR BETS TABLE CAN BE USED IN LEAGUE BETS VISUALS TOO maybe... this can be changed btwS*/
+
+.bets-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #F0F8FF;
+}
+
+.bets-table th, .bets-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.bets-table th {
+    background-color: #6c5969;
+    color: white;
+    font-weight: bold;
+}
+
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.team-crest {
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+}
+
+
+
+.exact {
+    background-color: #4CAF50;
+    color: white;
+}
+
+

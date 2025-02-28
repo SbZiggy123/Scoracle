@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<div class="grid-container">
+    <main>
+        <h1>Your Predictions</h1>
+        
+        {% if predictions %}
+            <table class="bets-table">
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Date</th>
+                        <th>Your Prediction</th>
+                        <th>Multiplier</th>
+                        <th>Potential Points</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prediction in predictions %}
+                        <tr>
+                            <td>
+                                {% if prediction.match_id in match_details %}
+                                    <div class="match-teams">
+                                        <img src="" class="team-crest" data-team="{{ match_details[prediction.match_id].home_team }}">
+                                        <span>{{ match_details[prediction.match_id].home_team }}</span>
+                                        <span>vs</span>
+                                        <span>{{ match_details[prediction.match_id].away_team }}</span>
+                                        <img src="" class="team-crest" data-team="{{ match_details[prediction.match_id].away_team }}">
+                                    </div>
+                                {% else %}
+                                    Match ID: {{ prediction.match_id }}
+                                {% endif %}
+                            </td>
+                            <td>
+                            {{ match_details[prediction.match_id].datetime.split(' ')[0] }}
+                            </td>
+                            <td class="prediction-score">{{ prediction.home_score }} - {{ prediction.away_score }}</td>
+                            <td>{{ prediction.multiplier }}x</td>
+                            <td>
+                                <div>Exact: {{ prediction.potential_exact_points }}</div>
+                                <div>Result: {{ prediction.potential_result_points }}</div>
+                            </td>
+                            <td> <!-- For working later -->
+                                {% if prediction.points_earned is not none %}
+                                    <div class="points-earned">{{ prediction.points_earned }} points</div>
+                                    {% if prediction.exact_score %}
+                                        <div class="prediction-result exact">Exact Score</div>
+                                    {% elif prediction.correct_result %}
+                                        <div class="prediction-result correct">Correct Result</div>
+                                    {% else %}
+                                        <div class="prediction-result incorrect">Incorrect</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="prediction-result pending">Pending</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>You haven't made any predictions yet.</p>
+            <div class="no-bets-action">
+                <a href="{{ url_for('main.premier_league') }}" class="action-button">View Upcoming Matches</a>
+            </div>
+        {% endif %}
+    </main>
+    <footer>Footer</footer>
+</div>
+{% endblock %}

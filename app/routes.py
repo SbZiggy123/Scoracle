@@ -194,10 +194,23 @@ from .prediction_model import PredictionSystem
 
 @main.route('/prediction/<match_id>', methods=['GET', 'POST'])
 async def prediction(match_id):
+    # Debug the match_id parameter
+    print(f"DEBUG: match_id type: {type(match_id)}, value: {match_id}")
+    
     form = PredictionForm()
     # Create a prediction system instance
     prediction_system = PredictionSystem()
-    prediction_data = await prediction_system.predict_match(match_id, 2024)
+    
+    try:
+        prediction_data = await prediction_system.predict_match(match_id, 2024)
+        print(f"DEBUG: Got prediction data: {bool(prediction_data)}")
+    except Exception as e:
+        import traceback
+        print(f"ERROR getting prediction data: {e}")
+        print(traceback.format_exc())
+        flash("Error retrieving match data", "error")
+        return redirect(url_for("main.fixtures"))
+    
     if not prediction_data:
         flash("Match not found", "error")
         return redirect(url_for("main.fixtures"))
@@ -205,11 +218,15 @@ async def prediction(match_id):
     user_prediction = None
     
     if "username" in session:
+        print(f"DEBUG: User in session: {session['username']}")
         user = get_user(session["username"])
         if user:
+            print(f"DEBUG: User ID: {user['id']}")
             user_predictions = get_user_predictions(user["id"])
+            print(f"DEBUG: Found {len(user_predictions)} existing predictions")
             for pred in user_predictions:
                 if pred["match_id"] == match_id:
+                    print(f"DEBUG: Found existing prediction for this match")
                     user_prediction = {"home_score": pred["home_score"], "away_score": pred["away_score"]}
 
                     if not form.home_score.data:
@@ -218,20 +235,60 @@ async def prediction(match_id):
                         form.away_score.data = pred["away_score"]
                     break
     
-    # Handle form submission 
+    # Handle form  
+    if "username" in session and request.method == "POST":
+        print(f"DEBUG: Form validation: {form.validate_on_submit()}")
+        if not form.validate_on_submit():
+            print(f"DEBUG: Form validation errors: {form.errors}")
+            
     if "username" in session and form.validate_on_submit():
-        user = get_user(session["username"])
-        if not user:
-            flash("User not found.", "danger")
-            return redirect(url_for("main.home"))
-        home_score = form.home_score.data
-        away_score = form.away_score.data
-    
-        if save_prediction(user["id"], match_id, home_score, away_score):
-            flash("Your prediction has been saved!", "success")
-            user_prediction = {"home_score": home_score, "away_score": away_score}
-        else:
-            flash("Failed to save your prediction. Please try again.", "danger")
+        try:
+            user = get_user(session["username"])
+            if not user:
+                flash("User not found.", "danger")
+                return redirect(url_for("main.home"))
+            
+            home_score = form.home_score.data
+            away_score = form.away_score.data
+            
+            print(f"DEBUG: Prediction details - User ID: {user['id']}, Match ID: {match_id}")
+            print(f"DEBUG: Home score: {home_score}, Away score: {away_score}")
+            
+            home_expected = prediction_data["home_expected"]
+            away_expected = prediction_data["away_expected"]
+        
+            points_data = prediction_system.calculate_points(
+                home_expected,
+                away_expected,
+                [home_score, away_score]
+            )
+            
+            print(f"DEBUG: Points data: {points_data}")
+            
+            # Convert match_id to string if it's not already
+            match_id_str = str(match_id)
+            
+            save_result = save_prediction(
+                user["id"], match_id_str, home_score, away_score, 
+                multiplier=points_data["multiplier"], 
+                potential_exact_points=points_data["exact_score"],
+                potential_result_points=points_data["correct_result"]
+            )
+            
+            print(f"DEBUG: Save prediction result: {save_result}")
+            
+            if save_result:
+                flash("Your prediction has been saved!", "success")
+                if 'view_all_bets' in request.form:
+                    return redirect(url_for("main.yourBets"))
+            else:
+                flash("Failed to save your prediction. Please try again.", "danger")
+                
+        except Exception as e:
+            import traceback
+            print(f"ERROR in prediction submission: {e}")
+            print(traceback.format_exc())
+            flash("An error occurred while saving your prediction", "danger")
                 
     return render_template(
         "prediction.html",
@@ -251,9 +308,42 @@ async def prediction(match_id):
         user_prediction=user_prediction
     )
 
+@main.route('/yourBets')
+async def yourBets():
+    from flask import session as flask_session
+    if "username" not in flask_session:
+        flash("You must be logged in to view your bets", "danger")
+        return redirect(url_for("main.login"))
+    
+    user = get_user(flask_session["username"])
+    if not user:
+        flash("User not found", "danger")
+        return redirect(url_for("main.home"))
+    
+    predictions = get_user_predictions(user["id"])
+    
+    # Fetch match details for each prediction
+    match_details = {}
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        results = await understat.get_league_results("epl", 2024)
         
-# Stats of users predictions in bottom of page
+        all_matches = fixtures + results
         
+        for match in all_matches:
+            match_details[match["id"]] = {
+                "home_team": match["h"]["title"],
+                "away_team": match["a"]["title"],
+                "datetime": match["datetime"]
+            }
+    
+    return render_template("yourBets.html", predictions=predictions, match_details=match_details)
+
+
+
+
+
 @main.route("/result/<match_id>") #named differently to the html page it's using btw
 async def single_result(match_id):
     async with aiohttp.ClientSession() as session:

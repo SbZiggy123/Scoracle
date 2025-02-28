@@ -175,10 +175,10 @@ class PredictionSystem:
             total_diff = 4 + (total_diff - 4) * 0.5
             
         
-        odds_multiplier = min(1.0 + (total_diff * 0.5), 8.0)
+        odds_multiplier = round((min(1.0 + (total_diff * 0.5), 8.0)), 2)
         
         return {
-            "multiplier": round(odds_multiplier, 2),
+            "multiplier": odds_multiplier,
             "exact_score": int(self.base_points * odds_multiplier),
             "correct_result": int(self.base_points)
         }

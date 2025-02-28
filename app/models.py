@@ -26,7 +26,7 @@ def init_db():
             c.execute('''
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT PRIMARY KEY UNIQUE NOT NULL,
+                    username TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     leagues TEXT DEFAULT '',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -45,6 +45,7 @@ def init_db():
                 )
             ''')
             # User predictions
+            
             c.execute('''
                 CREATE TABLE IF NOT EXISTS user_predictions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +53,9 @@ def init_db():
                     match_id TEXT NOT NULL,
                     home_score INTEGER NOT NULL,
                     away_score INTEGER NOT NULL,
+                    multiplier REAL DEFAULT 1.0,
+                    potential_exact_points INTEGER DEFAULT 100,
+                    potential_result_points INTEGER DEFAULT 100,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     points_earned INTEGER DEFAULT NULL,
                     exact_score BOOLEAN DEFAULT FALSE,
@@ -143,8 +147,10 @@ def user_exists(username):
     return False
 
 """ USER PREDICTIONS FOR GAME SCORES"""
-def save_prediction(user_id, match_id, home_score, away_score):
+def save_prediction(user_id, match_id, home_score, away_score, multiplier=1.0, potential_exact_points=100, potential_result_points=100):
     """Save or update a user's prediction for a match."""
+    import traceback
+    print(f"DEBUG save_prediction: user_id={user_id}, match_id={match_id}, scores={home_score}-{away_score}")
     conn = get_db_connection()
     if conn is not None:
         try:
@@ -154,27 +160,43 @@ def save_prediction(user_id, match_id, home_score, away_score):
                      (user_id, match_id))
             existing = c.fetchone()
             
+            print(f"DEBUG: Existing prediction found? {bool(existing)}")
+            
             if existing:
                 # Update
-                c.execute('''
+                print(f"DEBUG: Updating prediction with ID: {existing[0]}")
+                update_sql = '''
                     UPDATE user_predictions 
-                    SET home_score = ?, away_score = ?, created_at = CURRENT_TIMESTAMP
+                    SET home_score = ?, away_score = ?, multiplier = ?, 
+                    potential_exact_points = ?, potential_result_points = ?, created_at = CURRENT_TIMESTAMP
                     WHERE id = ?
-                ''', (home_score, away_score, existing[0]))
+                '''
+                params = (home_score, away_score, multiplier, potential_exact_points, potential_result_points, existing[0])
+                print(f"DEBUG: SQL: {update_sql}")
+                print(f"DEBUG: Params: {params}")
+                c.execute(update_sql, params)
             else:
-                # Insert 
-                c.execute('''
-                    INSERT INTO user_predictions (user_id, match_id, home_score, away_score)
-                    VALUES (?, ?, ?, ?)
-                ''', (user_id, match_id, home_score, away_score))
+                # Insert with all fields
+                insert_sql = '''
+                    INSERT INTO user_predictions
+                    (user_id, match_id, home_score, away_score, multiplier, potential_exact_points, potential_result_points)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                '''
+                params = (user_id, match_id, home_score, away_score, multiplier, potential_exact_points, potential_result_points)
+                print(f"DEBUG: SQL: {insert_sql}")
+                print(f"DEBUG: Params: {params}")
+                c.execute(insert_sql, params)
             
             conn.commit()
+            print("DEBUG: Database committed successfully")
             return True
-        except Error as e:
-            print(f"Error saving prediction: {e}")
+        except Exception as e:
+            print(f"ERROR saving prediction: {e}")
+            print(traceback.format_exc())
             return False
         finally:
             conn.close()
+    print("ERROR: Could not get database connection")
     return False
 
 def get_user_predictions(user_id, limit=10):
