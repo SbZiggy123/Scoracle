@@ -11,7 +11,7 @@
         <header>
             SCORACLE
             {%if session.username %}
-            <span class="username">USERNAME:{{ session.username }}</span>
+            <a href="{{ url_for('main.home') }}"" class="username">Hello, {{ session.username }}</a>
             {% endif %}
         </header>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -37,7 +37,7 @@
             </li>
             <li class="dropdown">
                 <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">
-                    <img src="{{ url_for('static', filename='PremLogo.webp') }}" alt="Premier League Logo" class="nav-logo">
+                    <img src="{{ url_for('static', filename='PremLogo.png') }}" alt="Premier League Logo" class="nav-logo">
                     Premier League</a>
 
             </li>
@@ -48,7 +48,7 @@
             {% else %}
             <li class="dropdown">
                 <a href="{{ url_for('main.login') }}" class="dropdown-trigger">
-                    <img src="{{ url_for('static', filename='loginLogo.jpg') }}" alt="Premier League Logo" class="nav-logo">
+                    <img src="{{ url_for('static', filename='loginLogo.png') }}" alt="Premier League Logo" class="nav-logo">
                     Login</a>
             </li>
             <li class="dropdown">
