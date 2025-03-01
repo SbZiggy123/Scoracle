@@ -8,12 +8,6 @@
     </head>
     <body>
         <div class="animated-bg"></div>
-        <header>
-            SCORACLE
-            {%if session.username %}
-            <a href="{{ url_for('main.home') }}"" class="username">Hello, {{ session.username }}</a>
-            {% endif %}
-        </header>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -24,6 +18,9 @@
             {% endif %}
         {% endwith %}
         <ul class="Navbar">
+            <li class="Scoracle-Logo">
+                <img src="{{ url_for('static', filename='scoracle.png') }}" alt="scoracle logo">
+            </li>
             <li class="dropdown">
                 <a href="{{ url_for('main.fixtures') }}" class="dropdown-trigger">Fixtures</a>
             </li>
@@ -43,12 +40,15 @@
             </li>
             {% if session.username %}
                 <li class="dropdown">
+                    <a href="{{ url_for('main.home') }}">Hello, {{ session.username }}</a>
+                </li>
+                <li class="dropdown">
                     <a href="{{ url_for('main.logout') }}" class="dropdown-trigger">Logout</a>
                 </li>
             {% else %}
             <li class="dropdown">
                 <a href="{{ url_for('main.login') }}" class="dropdown-trigger">
-                    <img src="{{ url_for('static', filename='loginLogo.png') }}" alt="Premier League Logo" class="nav-logo">
+                    <img src="{{ url_for('static', filename='login.png') }}" alt="Login Logo" class="nav-logo">
                     Login</a>
             </li>
             <li class="dropdown">
@@ -58,11 +58,7 @@
             </li>
             {% endif %}
         </ul>
-        <form action="{{ url_for('main.search') }}" method="get">
-            <input type="text" name="query" placeholder="Search"> 
-            <span class="search-icon">&#128269;</span>
-            <button type="submit">Search</button>
-        </form>
+
         
 
         {% block main_content %}
