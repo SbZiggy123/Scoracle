@@ -151,8 +151,8 @@
                     <ul>
                         <li>
                             <strong>{{ match.h.title }}</strong> is expected to score <strong>{{ home_expected|round(2) }}</strong> goals
-                            {% if home_weight > 1 %} 
-                            (including a {{ (home_weight-1)*100 }}% home advantage)
+                            {% if home_weight > 1 %} <!-- different weights for different teams-->
+                            (including a {{ ((home_weight-1)*100)|round|int }}% home advantage)
                             {% endif %}
                         </li>
                         <li>

@@ -192,7 +192,6 @@ class PredictionForm(FlaskForm):
 from .prediction_model import PredictionSystem
 
 @main.route('/prediction/<match_id>', methods=['GET', 'POST'])
-@main.route('/prediction/<match_id>', methods=['GET', 'POST'])
 async def prediction(match_id):
     # Debug the match_id parameter
     print(f"DEBUG: match_id type: {type(match_id)}, value: {match_id}")
@@ -324,7 +323,37 @@ async def prediction(match_id):
         user_prediction=user_prediction
     )
 
+@main.route('/yourBets')
+async def yourBets():
+    from flask import session as flask_session
+    if "username" not in flask_session:
+        flash("You must be logged in to view your bets", "danger")
+        return redirect(url_for("main.login"))
+    
+    user = get_user(flask_session["username"])
+    if not user:
+        flash("User not found", "danger")
+        return redirect(url_for("main.home"))
+    
+    predictions = get_user_predictions(user["id"])
+    
+    # Fetch match details for each prediction
+    match_details = {}
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        results = await understat.get_league_results("epl", 2024)
         
+        all_matches = fixtures + results
+        
+        for match in all_matches:
+            match_details[match["id"]] = {
+                "home_team": match["h"]["title"],
+                "away_team": match["a"]["title"],
+                "datetime": match["datetime"]
+            }
+    
+    return render_template("yourBets.html", predictions=predictions, match_details=match_details)
 # Stats of users predictions in bottom of page
         
 @main.route("/result/<match_id>") #named differently to the html page it's using btw

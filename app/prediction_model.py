@@ -118,8 +118,9 @@ class PredictionSystem:
         
         return round(expected_score * position_factor, 2)
     
+    """
     async def get_team_xg_performance(self, team_name, season):
-        """Function to see whether they outperform or underperform their xg"""
+        # Function to see whether they outperform or underperform their xg
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
             results = await understat.get_team_results(team_name, season)
@@ -144,7 +145,7 @@ class PredictionSystem:
             # Calculate ratio and cap between 0.7 and 1.3 
             ratio = total_goals / total_xg
             return max(0.7, min(1.3, ratio))
-        
+    """
     # Moving route stuff to here
     async def predict_match(self, match_id, season):
         """Generate match prediction with all factors"""
