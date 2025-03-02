@@ -31,7 +31,28 @@ class PredictionSystem:
         """Get recent match data for a team with opposition information"""
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
-            results = await understat.get_team_results(team_name, season)
+            results = await understat.get_team_results(team_name, season) # gets whole season
+            
+            
+            total_goals = 0
+            total_xg = 0
+            
+            for match in results:
+                if match["h"]["title"] == team_name:
+                    if match["goals"]["h"] is not None and match["xG"]["h"] is not None:
+                        total_goals += int(match["goals"]["h"])
+                        total_xg += float(match["xG"]["h"])
+                else:
+                    if match["goals"]["a"] is not None and match["xG"]["a"] is not None:
+                        total_goals += int(match["goals"]["a"])
+                        total_xg += float(match["xG"]["a"])
+            
+            # ratio
+            xg_performance = 1.0
+            if total_xg >= 1.0:
+                xg_performance = total_goals / total_xg
+                # Cap between 0.7 and 1.3
+                xg_performance = max(0.7, min(1.3, xg_performance))
             
             # Sort by most recent
             recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
@@ -39,17 +60,39 @@ class PredictionSystem:
             # Extract xG values and opposition teams based on home/away
             # Playing against a top team will affect the xg... Don't want that to affect the model TOO much
             recent_xg = []
+            recent_goals = []
             opposition_teams = []
+            match_dates = []
+            match_results = []  # W, D, L
             
             for match in recent_results:
                 if match["h"]["title"] == team_name:
+                    # Team played at home
                     recent_xg.append(float(match["xG"]["h"]))
-                    opposition_teams.append(match["a"]["title"])  # Opposition was away team
+                    recent_goals.append(int(match["goals"]["h"]))
+                    opposition_teams.append(match["a"]["title"])
+                    result = "W" if match["goals"]["h"] > match["goals"]["a"] else "D" if match["goals"]["h"] == match["goals"]["a"] else "L"
+                    match_results.append(result)
                 else:
+                    # Team played away
                     recent_xg.append(float(match["xG"]["a"]))
-                    opposition_teams.append(match["h"]["title"])  # Opposition was home team
-                    
-            return recent_xg, opposition_teams
+                    recent_goals.append(int(match["goals"]["a"]))
+                    opposition_teams.append(match["h"]["title"])
+                    result = "W" if match["goals"]["a"] > match["goals"]["h"] else "D" if match["goals"]["a"] == match["goals"]["h"] else "L"
+                    match_results.append(result)
+                
+                
+                match_date = match["datetime"].split(" ")[0]
+                match_dates.append(match_date)
+                
+            return {
+                "xg": recent_xg, 
+                "goals": recent_goals,
+                "opponents": opposition_teams,
+                "dates": match_dates,
+                "results": match_results,
+                "xg_performance": round(xg_performance, 2)  # Include the performance ratio
+            }
     
     async def get_league_positions(self, season):
         async with aiohttp.ClientSession() as session:
@@ -118,24 +161,24 @@ class PredictionSystem:
             home_team = match["h"]["title"]
             away_team = match["a"]["title"]
             
-            # Get recent xG data for both teams with opposition information
-            home_xg, home_opposition = await self.get_team_recent_data(home_team, season)
-            away_xg, away_opposition = await self.get_team_recent_data(away_team, season)
-            
-            # Get xG performance ratios (how efficiently teams convert xG to actual goals)
-            home_xg_performance = await self.get_team_xg_performance(home_team, season)
-            away_xg_performance = await self.get_team_xg_performance(away_team, season)
-            
-            # Get league positions for opposition adjustment
             league_positions = await self.get_league_positions(season)
             
+            # New dict with everything reduce calls
+            home_data = await self.get_team_recent_data(home_team, season)
+            away_data = await self.get_team_recent_data(away_team, season)
+            
+            # Extract xG performance ratios
+            home_xg_performance = home_data["xg_performance"]
+            away_xg_performance = away_data["xg_performance"]
+            
             # Calculate base expected scores with xG performance adjustment
-            home_expected = self.calculate_expected_score(home_xg, home_xg_performance) * self.home_weight
-            away_expected = self.calculate_expected_score(away_xg, away_xg_performance)
+            home_expected = self.calculate_expected_score(home_data["xg"], home_xg_performance) * self.home_weight
+            away_expected = self.calculate_expected_score(away_data["xg"], away_xg_performance)
             
             # Adjust for opposition strength
-            home_opposition_positions = [league_positions.get(team, 10) for team in home_opposition]
-            away_opposition_positions = [league_positions.get(team, 10) for team in away_opposition]
+            # Accessed through home_data y ... etc now. 
+            home_opposition_positions = [league_positions.get(team, 10) for team in home_data["opponents"]]
+            away_opposition_positions = [league_positions.get(team, 10) for team in away_data["opponents"]]
             
             home_expected = self.adjust_for_opposition(home_expected, home_opposition_positions)
             away_expected = self.adjust_for_opposition(away_expected, away_opposition_positions)
@@ -149,17 +192,23 @@ class PredictionSystem:
             
             return {
                 "match": match,
-                "home_xg": home_xg,
-                "away_xg": away_xg,
-                "home_xg_performance": round(home_xg_performance, 2),
-                "away_xg_performance": round(away_xg_performance, 2),
-                "home_opposition": home_opposition,
-                "away_opposition": away_opposition,
+                "home_xg": home_data["xg"],
+                "away_xg": away_data["xg"],
+                "home_goals": home_data["goals"],
+                "away_goals": away_data["goals"],
+                "home_opponents": home_data["opponents"],
+                "away_opponents": away_data["opponents"],
+                "home_dates": home_data["dates"],
+                "away_dates": away_data["dates"],
+                "home_results": home_data["results"],
+                "away_results": away_data["results"],
+                "home_xg_performance": home_xg_performance,
+                "away_xg_performance": away_xg_performance,
                 "home_expected": home_expected,
                 "away_expected": away_expected,
                 "prediction": {"home": home_score, "away": away_score},
                 "probabilities": probabilities
-            }
+            }   
     """User will alter his bet live IN the webapp. It NEEDS to update odds then and there... This will be moved to js"""
         
         # Server will use this when adding to DB... JS mirrors it

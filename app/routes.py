@@ -203,6 +203,11 @@ async def prediction(match_id):
     try:
         prediction_data = await prediction_system.predict_match(match_id, 2024)
         print(f"DEBUG: Got prediction data: {bool(prediction_data)}")
+        for key in ["home_xg", "away_xg", "home_goals", "away_goals", 
+                   "home_opponents", "away_opponents", "home_dates", 
+                   "away_dates", "home_results", "away_results"]:
+            if key in prediction_data:
+                prediction_data[key] = list(reversed(prediction_data[key]))
     except Exception as e:
         import traceback
         print(f"ERROR getting prediction data: {e}")
@@ -288,22 +293,33 @@ async def prediction(match_id):
             print(f"ERROR in prediction submission: {e}")
             print(traceback.format_exc())
             flash("An error occurred while saving your prediction", "danger")
-                
+        
+    
+    print("DEBUG DATA BEING PASSED TO TEMPLATE:")
+    for key in ["home_opponents", "away_opponents", "home_dates", "away_dates", "home_results"]:
+        print(f"{key}: {prediction_data.get(key, 'MISSING')}")
     return render_template(
         "prediction.html",
         form=form,
         match=prediction_data['match'],
         home_xg=prediction_data['home_xg'],
         away_xg=prediction_data['away_xg'],
+        home_goals=prediction_data['home_goals'],
+        away_goals=prediction_data['away_goals'],
+        home_opponents=prediction_data['home_opponents'],
+        away_opponents=prediction_data['away_opponents'],
+        home_dates=prediction_data['home_dates'],
+        away_dates=prediction_data['away_dates'],
+        home_results=prediction_data['home_results'],
+        away_results=prediction_data['away_results'],
         ai_prediction=prediction_data['prediction'],
         probabilities=prediction_data['probabilities'],
         home_xg_performance=prediction_data['home_xg_performance'],
         away_xg_performance=prediction_data['away_xg_performance'],
-        home_opposition=prediction_data['home_opposition'],
-        away_opposition=prediction_data['away_opposition'],
         home_expected=prediction_data['home_expected'],
         away_expected=prediction_data['away_expected'],
         league_positions=await prediction_system.get_league_positions(2024),
+        home_weight=prediction_system.home_weight, # for now
         user_prediction=user_prediction
     )
 
@@ -355,6 +371,7 @@ async def single_result(match_id):
             match_players = await understat.get_match_players(match_id)
             match_shots = await understat.get_match_shots(match_id)
 
+                
             # for table popup gonna do
             
             home_stats = {
@@ -465,12 +482,5 @@ def home():
     '''Inprogress'''
     if "username" not in session:
         return redirect(url_for("main.login"))
-    else:
-        user = get_user(session["username"])
-        totalLeagues = len(get_user_leagues(user))
-        teams = Understat.get_teams("epl", 2024)
-        team_names = []
-        for team in teams:
-            team_name = team["title"]
-            team_names.append(team_name)
-    return render_template("home.html", totalLeagues=totalLeagues, username=session["username"], team_names=team_names)
+
+    return render_template("home.html")

@@ -5,6 +5,7 @@
         <title>Scoracle</title>
         <link rel="stylesheet" href="{{ url_for('static', filename = 'styles.css') }}">
         <script src="{{ url_for('static', filename = 'assignment.js') }}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <div class="animated-bg"></div>
@@ -25,7 +26,7 @@
         {% endwith %}
         <ul class="Navbar">
             <li class="dropdown">
-                <a href="{{ url_for('main.fixtures') }}" class="dropdown-trigger">Fixtures</a>
+                <a href="{{ url_for('main.yourBets') }}" class="dropdown-trigger">yourBets</a>
             </li>
             <li class="dropdown">
                 <a href="" class="dropdown-trigger">Fantasy Leagues</a>
