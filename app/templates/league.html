@@ -2,8 +2,8 @@
 
 {% block main_content %}
 <div class="grid-container">
-  <h1>{{ league.league_name }}</h1>
   <main>
+    <h1>{{ league.league_name }}</h1>
     <p>Type: {{ league.league_type }}</p>
     <p>Privacy: {{ league.privacy }}</p>
     {% if league.privacy == "Private" and league.league_code %}
