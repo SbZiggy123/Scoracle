@@ -282,6 +282,7 @@ async def prediction(match_id):
             print(f"DEBUG: Save prediction result: {save_result}")
             
             if save_result:
+                user_prediction = {"home_score": home_score, "away_score": away_score}
                 flash("Your prediction has been saved!", "success")
                 if 'view_all_bets' in request.form:
                     return redirect(url_for("main.yourBets"))
