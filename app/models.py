@@ -65,7 +65,18 @@ def init_db():
                     UNIQUE (user_id, match_id)
                 )
             ''')
-            
+            #League Specific User Scores
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS league_scores (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    league_id INTEGER NOT NULL,
+                    score INTEGER DEFAULT 0,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id),
+                    UNIQUE (user_id, league_id) /* Prevent duplicates */
+                )
+            ''')
             """League members go here"""
             conn.commit()
         except Error as e:
@@ -372,38 +383,129 @@ def is_user_in_league(username, league_id):
         try:
             c = conn.cursor()
             c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
-            members = c.fetchone()[0]
-            if str(username) in members.split(","):
-                return True
+            result = c.fetchone()
+
+            if result and result[0]:
+                members = result[0].split(",")
+                return username in members
+
             return False
         except Error as e:
-            print(f"Error checking user in league: {e}")
+            print(f"Error checking if user is in league: {e}")
             return False
         finally:
             conn.close()
     return False
 
 def add_user_to_league(username, league_id):
-    """Add a user to a league and update both users and fantasyLeagues tables."""
+    """Add a user to a league and ensure they have a score entry, updating the user's leagues column."""
     conn = get_db_connection()
     if conn is not None:
         try:
             c = conn.cursor()
 
+            c.execute("SELECT id FROM users WHERE username = ?", (username,))
+            user_row = c.fetchone()
+            if not user_row:
+                return False
+            user_id = user_row[0]
+
             c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
-            members = c.fetchone()[0]
-            updated_members = f"{members},{username}".strip(",")
+            members_row = c.fetchone()
+            members = members_row[0].split(",") if members_row and members_row[0] else []
+            
+            if username in members:
+                return False 
+
+            members.append(username)
+            updated_members = ",".join(members)
             c.execute("UPDATE fantasyLeagues SET members = ? WHERE id = ?", (updated_members, league_id))
 
             c.execute("SELECT leagues FROM users WHERE username = ?", (username,))
-            user_leagues = c.fetchone()[0]
-            updated_leagues = f"{user_leagues},{league_id}".strip(",")
-            c.execute("UPDATE users SET leagues = ? WHERE username = ?", (updated_leagues, username))
+            user_leagues_row = c.fetchone()
+            user_leagues = user_leagues_row[0] if user_leagues_row and user_leagues_row[0] else ""
+            updated_user_leagues = f"{user_leagues},{league_id}".strip(",")
+            c.execute("UPDATE users SET leagues = ? WHERE username = ?", (updated_user_leagues, username))
+
+            c.execute("INSERT OR IGNORE INTO league_scores (user_id, league_id, score) VALUES (?, ?, 0)", 
+                      (user_id, league_id))
 
             conn.commit()
             return True
         except Error as e:
             print(f"Error adding user to league: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+
+def get_league_leaderboard(league_id):
+    """Fetch the leaderboard for a specific league"""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Get all members of the league
+            c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
+            members_str = c.fetchone()
+            if not members_str or not members_str[0]:
+                return []
+
+            member_list = [x.strip() for x in members_str[0].split(",") if x.strip()]
+
+            # Fetch user IDs for these members
+            placeholders = ','.join(['?'] * len(member_list))
+            c.execute(f"SELECT id, username FROM users WHERE username IN ({placeholders})", member_list)
+            users = {row[0]: row[1] for row in c.fetchall()}  # Dict {user_id: username}
+
+            # Fetch existing scores from league_scores
+            c.execute("SELECT user_id, score FROM league_scores WHERE league_id = ?", (league_id,))
+            existing_scores = {row[0]: row[1] for row in c.fetchall()}  # Dict {user_id: score}
+
+            # Build the leaderboard
+            leaderboard = []
+            for user_id, username in users.items():
+                score = existing_scores.get(user_id, 0)  # Default to 0 if no score exists
+                leaderboard.append({"username": username, "score": score})
+
+            # Sort by score (highest first)
+            leaderboard.sort(key=lambda x: x["score"], reverse=True)
+
+            return leaderboard
+        except Error as e:
+            print(f"Error fetching leaderboard: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
+
+def update_league_score(user_id, league_id, points):
+    """Update a user's score in a specific league."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+
+            # Check if the user already has a score in this league
+            c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = ?", (user_id, league_id))
+            result = c.fetchone()
+
+            if result:
+                # Update existing score
+                new_score = result[0] + points
+                c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = ?", 
+                          (new_score, user_id, league_id))
+            else:
+                # Insert new score entry
+                c.execute("INSERT INTO league_scores (user_id, league_id, score) VALUES (?, ?, ?)", 
+                          (user_id, league_id, points))
+
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error updating league score: {e}")
             return False
         finally:
             conn.close()
