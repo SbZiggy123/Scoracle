@@ -93,7 +93,77 @@
                     <p class="login-prompt">Please <a href="{{ url_for('main.login') }}">login</a> to save your prediction</p>
                 {% endif %}
             </div>
-            
+            <div class="match-analysis">
+                <h3>Match Analysis</h3>
+                <div class="analysis-section">
+                    <div class="team-analysis">
+                        <h4>{{ match.h.title }} Recent Form</h4>
+                        <div class="chart-container">
+                            <canvas id="homeTeamChart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="efficiency-explanation">
+                            <p>
+                                {% if home_xg_performance > 1 %}
+                                <span class="performance-good">Converting chances at {{ home_xg_performance }}× the expected rate</span>
+                                {% else %}
+                                <span class="performance-poor">Converting chances at {{ home_xg_performance }}× the expected rate</span>
+                                {% endif %}
+                            </p>
+                            <p class="explanation-text">
+                                {% if home_xg_performance > 1 %}
+                                {{ match.h.title }} is finishing chances more efficiently than expected.
+                                {% else %}
+                                {{ match.h.title }} may be struggling with finishing quality recently.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="team-analysis">
+                        <h4>{{ match.a.title }} Recent Form</h4>
+                        <div class="chart-container">
+                            <canvas id="awayTeamChart" width="400" height="200"></canvas>
+                        </div>
+                        <div class="efficiency-explanation">
+                            <p>
+                                {% if away_xg_performance > 1 %}
+                                <span class="performance-good">Converting chances at {{ away_xg_performance }}× the expected rate</span>
+                                {% else %}
+                                <span class="performance-poor">Converting chances at {{ away_xg_performance }}× the expected rate</span>
+                                {% endif %}
+                            </p>
+                            <p class="explanation-text">
+                                {% if away_xg_performance > 1 %}
+                                {{ match.a.title }} is finishing chances more efficiently than expected.
+                                {% else %}
+                                {{ match.a.title }} may be struggling with finishing quality recently.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="prediction-explanation">
+                    <h4>Why This Prediction?</h4>
+                    <p>
+                        Our AI predicts <strong>{{ ai_prediction.home }} - {{ ai_prediction.away }}</strong> based on:
+                    </p>
+                    <ul>
+                        <li>
+                            <strong>{{ match.h.title }}</strong> is expected to score <strong>{{ home_expected|round(2) }}</strong> goals
+                            {% if home_weight > 1 %} <!-- different weights for different teams-->
+                            (including a {{ ((home_weight-1)*100)|round|int }}% home advantage)
+                            {% endif %}
+                        </li>
+                        <li>
+                            <strong>{{ match.a.title }}</strong> is expected to score <strong>{{ away_expected|round(2) }}</strong> goals
+                        </li>
+                        <li>
+                            Win probability: Home {{ probabilities.home_win }}% | Draw {{ probabilities.draw }}% | Away {{ probabilities.away_win }}%
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </main>
     <footer>Footer</footer>
@@ -105,5 +175,21 @@
     data-away-expected="{{ away_expected }}"
     data-base-points="100">
 </div>
+
+<div id="chart-data" 
+    data-home-team='{{ match.h.title }}'
+    data-away-team='{{ match.a.title }}'
+    data-home-xg='{{ home_xg|tojson }}'
+    data-away-xg='{{ away_xg|tojson }}'
+    data-home-goals='{{ home_goals|tojson }}'
+    data-away-goals='{{ away_goals|tojson }}'
+    data-home-opponents='{{ home_opponents|tojson }}'
+    data-away-opponents='{{ away_opponents|tojson }}'
+    data-home-dates='{{ home_dates|tojson }}'
+    data-away-dates='{{ away_dates|tojson }}'
+    data-home-results='{{ home_results|tojson }}'
+    data-away-results='{{ away_results|tojson }}'>
+</div>
+
 
 {% endblock %}
