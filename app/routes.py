@@ -3,7 +3,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league
+from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -129,20 +129,25 @@ def join_public_league(league_id):
 
 #called when user clicks on league name
 @main.route("/league/<int:league_id>")
-def league(league_id):
+async def league(league_id):
+    """View a specific league after joining it, including leaderboard and fixtures."""
     league = get_league_by_id(league_id)
     if not league:
         flash("League not found")
         return redirect(url_for("main.join_league"))
 
-    members_str = league.get("members")
-    if members_str:
-        member_list = [x.strip() for x in members_str.split(",") if x.strip()]
-    else:
-        member_list = []
+    members_str = league.get("members", "")
+    member_list = [x.strip() for x in members_str.split(",") if x.strip()] if members_str else []
     league["member_list"] = member_list
 
-    return render_template("league.html", league=league)
+    league["leaderboard"] = get_league_leaderboard(league_id)
+
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+
+    return render_template("league.html", league=league, upcoming_fixtures=upcoming_fixtures)
 
 
 @main.route('/myLeagues')

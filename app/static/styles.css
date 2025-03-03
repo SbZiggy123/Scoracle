@@ -697,4 +697,150 @@ body {
     color: white;
 }
 
+/*LEAGUE LEADERBOARD*/
+.leaderboard-container {
+    width: 80%; /* Reduce width for better spacing */
+    margin: 20px auto; /* Center it and add space around */
+    text-align: center;
+}
 
+.leaderboard-title {
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.leaderboard-table {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background-color: #F0F8FF;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaderboard-table th, .leaderboard-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    height: 40px;
+}
+
+.leaderboard-table th {
+    background-color: #6c5969;
+    color: white;
+    font-weight: bold;
+}
+
+.leaderboard-table td {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.leaderboard-table tbody tr:nth-child(1) td {
+    background-color: gold;
+    color: black;
+}
+
+.leaderboard-table tbody tr:nth-child(2) td {
+    background-color: silver;
+    color: black;
+}
+
+.leaderboard-table tbody tr:nth-child(3) td {
+    background-color: #cd7f32;
+    color: black;
+}
+
+.leaderboard-table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: scale(1.01);
+}
+
+/*LEAGUE PAGE FIXTURES*/
+
+.fixtures-container {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px; /* Adds spacing between matches */
+}
+
+.match-item {
+    display: flex;
+    flex-direction: column;  /* Stack elements vertically */
+    align-items: center;
+    width: 100%;
+    max-width: 700px;  /* Limit width */
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+}
+
+.match-date {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    background: #e0e0e0;
+    padding: 8px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 10px;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.match-date:hover {
+    background: #555;
+    color: #e0e0e0;
+}
+
+.match-details {
+    display: flex;
+    flex-direction: row;  /* Arrange Bet - Teams - Bet in a row */
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.bet-form {
+    flex: 1; /* Ensures bet buttons align */
+    display: flex;
+    justify-content: center;
+}
+
+.bet-button {
+    font-weight: bold;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.bet-button:hover {
+    transform: scale(1.05);
+}
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 2;
+    gap: 15px;
+    text-align: center;
+}
+
+.team-crest {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 5px;
+}

@@ -21,7 +21,65 @@
     {% else %}
       <p>No members yet.</p>
     {% endif %}
+    <h2 class="leaderboard-title">Leaderboard</h2>
+<div class="leaderboard-container">
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Player</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in league.leaderboard %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ player.username }}</td>
+            <td>{{ player.score }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+<div class="fixtures-container">
+  {% for fixture in upcoming_fixtures %}
+  <div class="match-item">
+      
+      <!-- Match Date Centered -->
+      <div class="match-date">
+          {{ fixture.datetime.split(' ')[0] }}
+          <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
+      </div>
 
+      <div class="match-details">
+          <!-- Left Bet Button -->
+          <form action="#" method="POST" class="bet-form">
+              <button type="submit" class="bet-button">Bet</button>
+          </form>
+
+          <!-- Match Teams Centered -->
+          <div class="match-teams">
+              <a href="{{ url_for('main.fixtures', team_name=fixture.h.title)}}" class="team-link">
+                  <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
+                  <span class="team-name">{{ fixture.h.title }}</span>
+              </a>
+              <span class="score">vs</span>
+              <a href="{{ url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
+                  <span class="team-name">{{ fixture.a.title }}</span>
+                  <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
+              </a>
+          </div>
+
+          <!-- Right Bet Button -->
+          <form action="#" method="POST" class="bet-form">
+              <button type="submit" class="bet-button">Bet</button>
+          </form>
+      </div>
+
+  </div>
+  {% endfor %}
+</div>
   </main>
 </div>
 {% endblock %}
