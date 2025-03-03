@@ -299,6 +299,16 @@ async def prediction(match_id):
     print("DEBUG DATA BEING PASSED TO TEMPLATE:")
     for key in ["home_opponents", "away_opponents", "home_dates", "away_dates", "home_results"]:
         print(f"{key}: {prediction_data.get(key, 'MISSING')}")
+        
+        # 0s are not saving for some reason
+    if "username" in session and request.method == "POST":
+        print(f"DEBUG: Raw form data: {request.form}")
+        print(f"DEBUG: home_score from form: {form.home_score.data}, type: {type(form.home_score.data)}")
+        print(f"DEBUG: away_score from form: {form.away_score.data}, type: {type(form.away_score.data)}")
+        print(f"DEBUG: Form validation: {form.validate_on_submit()}")
+        if not form.validate_on_submit():
+            print(f"DEBUG: Form validation errors: {form.errors}")
+            
     return render_template(
         "prediction.html",
         form=form,
