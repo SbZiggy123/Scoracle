@@ -4,7 +4,8 @@
 <script src="{{ url_for('static', filename='prediction.js') }}"></script>
 <div class="grid-container">
     <main>
-      <!-- More divs probably... Prediction page need a lot-->
+    <div class="prediction-page">
+      <div class="prediction-content">
         <div class="match-header">
             <div class="teams-container">
                 <div class="team-home">
@@ -14,9 +15,9 @@
                         <h4>Recent xG: {{ home_xg|map('float')|map('round', 2)|join(', ') }}</h4>
                     </div>
                 </div>
-                
-                <div class="match-time">
-                    {{ match.datetime.split(' ')[1][:5] }}
+                <div class="match-info">
+                    <div class="match-time">{{ match.datetime.split(' ')[1][:5] }}</div>
+                    <div class="match-date">{{ match.datetime.split(' ')[0] }}</div>
                 </div>
 
                 <div class="team-away">
@@ -28,10 +29,8 @@
                 </div>
             </div>
             
-            <div class="match-date">
-                {{ match.datetime.split(' ')[0] }}
-            </div>
         </div>
+
 
         <div class="prediction-section">
             <div class="ai-prediction">
@@ -39,10 +38,16 @@
                 <p>{{ ai_prediction.home }} - {{ ai_prediction.away }}</p>
                 
                 <div class="probabilities">
-                    <p>Win: {{ probabilities.home_win }}%</p>
+                    <p>Home Win: {{ probabilities.home_win }}%</p>
                     <p>Draw: {{ probabilities.draw }}%</p>
-                    <p>Loss: {{ probabilities.away_win }}%</p>
+                    <p>Away Win: {{ probabilities.away_win }}%</p>
                 </div>
+                <div class="probability-bar">
+                    <div class="bar win-bar" style="width: {{ probabilities.home_win }}%"></div>
+                    <div class="bar draw-bar" style="width: {{ probabilities.draw }}%"></div>
+                    <div class="bar loss-bar" style="width: {{ probabilities.away_win }}%"></div>
+                </div>
+
             </div>
 
             <div class="user-prediction">
@@ -93,6 +98,9 @@
                     <p class="login-prompt">Please <a href="{{ url_for('main.login') }}">login</a> to save your prediction</p>
                 {% endif %}
             </div>
+        </div>
+      </div>
+    </div>
             <div class="match-analysis">
                 <h3>Match Analysis</h3>
                 <div class="analysis-section">
