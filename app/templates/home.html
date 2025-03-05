@@ -3,26 +3,27 @@
 {% block main_content %}
     <div class="grid-container">
       <main class="dashboard">
+        <h1>Welcome to Scoracle, {{ username }}</h1>
         <div class="dash-head">
-          <h1>Welcome to Scoracle, {{ username }}</h1>
           {% if leagues %}
             <p>You are in {{ totalLeagues }} Leagues!</p>
             <p></p>
           {% else %}
             <p>You are not in any leagues yet.</p>
+            <img class="profile-pic" src="{{ url_for('static', filename='login.png') }}" alt="Profile picture">
             <p>Look for leagues <a href="{{ url_for('main.join_league') }}">here</a>!</p>
             <p>Create a league <a href="{{ url_for('main.create_league') }}">here</a>!</p>
           {% endif %}
-          <img src="" alt="Profile picture">
-          <a href="{{ url_for('main.logout') }}">Logout</a>
         </div> 
+        <a class="logout" href="{{ url_for('main.logout') }}">Logout</a>
+
 
         <div class="Update">
           <h1>Update</h1>
-          <form class="Update" method="POST" action="">
+          <form class="Update" method="POST" action="{{ url_for('main.update') }}">
             <label>Username:</label>
             <input type="text" name="username" id="new_username">
-
+            
             <label>Favourite Team:</label>
             <select name="favourite_team" id="favourite_team">
               <option value="Default">Select a Team!</option>
@@ -33,6 +34,7 @@
 
             <label>Change Profile Picture:</label>
             <input type="file" id="profile_pic" name="profile_pic" accept="image/jpeg, image/png, image/webp">
+            <button class="updateSubmit" type="submit">Update</button>
           </form>
 
 
