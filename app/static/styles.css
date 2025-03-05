@@ -120,6 +120,7 @@
 
 body{
     background-color: #B0E0E6;
+    font-family: 'Roboto', Arial, sans-serif;
 }
 header{
     grid-column: span 3;
@@ -889,4 +890,373 @@ body {
     height: 50px;
     object-fit: contain;
     margin-bottom: 5px;
+}
+
+/*Prediction page css */
+.prediction-page{
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+.prediction-content{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.prediction-page .match-header{
+    /* width: 100%; */
+    flex: 1;
+    background: linear-gradient(90deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+.prediction-page .teams-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 20px 0px;
+    gap: 40px;
+}
+.prediction-page.team-home,
+.prediction-page .team-away{
+    text-align: center;
+    flex: 1;
+}
+
+.prediction-page .team-crest{
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+.prediction-page .match-info{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 5px;
+    padding: 10px 0px;
+    padding-left: 50px;
+    padding-right: 20px;
+
+}
+
+.prediction-page .match-time{
+    font-size: 22px;
+    font-weight: bold;
+    background: #f8b400;
+    color: #333;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 150px;
+    margin: 0 auto;
+
+}
+
+.prediction-page .match-date{
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background: #333;
+    padding: 8px 15px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ddd;
+
+}
+.prediction-page .prediction-section{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.prediction-page .ai-prediction{
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.prediction-page .ai-prediction h3{
+    color: #2a5298;
+    font-size: 20px;
+    margin-bottom: 10px;
+
+}
+.prediction-page .ai-prediction p{
+    font-size: 22px;
+    font-weight: bold;
+    background-color: #e6e6e6;
+    width: 100px ;
+    display: block;
+    align-items: center;
+    margin: 0 auto;
+    border-radius: 6px;
+    padding: 3px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+
+}
+
+.prediction-page .probabilities {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.prediction-page .probabilities p{
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+}
+
+.prediction-page .probabilities p:nth-child(1) { background: #28a745; }
+.prediction-page .probabilities p:nth-child(2) { background: #ffc107; }
+.prediction-page .probabilities p:nth-child(3) { background: #dc3545; }
+
+.prediction-page .probability-bar{
+    display: flex;
+    width: 100%;
+    max-width: 400px;
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ddd;
+    margin: 10px auto;
+    border: 2px solid #ccc;
+}
+
+.prediction-page .bar{
+    height: 100%;
+}
+
+.prediction-page .win-bar{ background: #28a745;}
+.prediction-page .draw-bar{ background: #ffc107;}
+.prediction-page .loss-bar{ background: #dc3545;}
+
+.prediction-page .bar-labels{
+    display: flex;
+    justify-content: space-between;
+    max-width: 400px;
+    margin: 5px auto;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.prediction-page .user-prediction{
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.prediction-page .score-inputs{
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: 18px;
+    margin-top: 10px;
+}
+
+.prediction-page .form-field input{
+    width: 50px;
+    height: 40px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid;
+    border-radius: 5px;
+}
+
+.prediction-page .submit-prediction{
+    width: 100%;
+    background: #2a5298;
+    color: white;
+    font-size: 16px;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+
+}
+
+.prediction-page .submit-prediction:hover{
+    background: #1e3c72;
+
+}
+
+.prediction-page .bets-link{
+    text-align: center;
+   margin-top: 10px; 
+}
+.prediction-page .view-bets-link{
+    color: #2a5298;
+    text-decoration: none;
+    font-weight: bold;
+
+}
+.prediction-page .view-bets-link:hover{
+    text-decoration: underline;
+}
+
+/*Single result html css*/
+/* .singleResult{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+} */
+
+.singleResult .teams-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+
+}
+
+.singleResult .team-home-team,
+.singleResult .team-away-team{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+
+.singleResult .team-crest{
+ width: 140px;
+ height: 140px;
+ object-fit: contain;
+ margin-bottom: 8px;   
+}
+
+.singleResult .match-info{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.singleResult .match-time{
+    font-size: 20px;
+    font-weight: bold;
+    background: #2a5298;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.singleResult .match-date{
+    font-size: 16px;
+    font-weight: bold;
+    color: #2a5298;
+    padding: 5px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.singleResult .score-container{
+    text-align: center;
+    margin: 20px 0;
+}
+.singleResult .final-score{
+    font-size: 32px;
+    font-weight: bold;
+    padding: 12px 20px;
+    background: #2a5298;
+    color: white;
+    border-radius: 5px;
+    display: inline-block;
+}
+.singleResult .match-stats{
+    margin-top: 20px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+.singleResult .stats-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+
+}
+
+.singleResult .stats-table td{
+    padding: 10px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.singleResult .stat-label{
+    font-weight: bold;
+    background: #f2f3f5;
+    padding: 8px;
+}
+
+.singleResult .player-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: #ffffff;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.singleResult .player-table th{
+    background: #2a5298;
+    color: white;
+    padding: 10px;
+
+}
+.singleResult .player-table td{
+    padding: 8px;
+    border-bottom: 1px solid ;
+    text-align: center;
+}
+
+.singleResult .match-stats h3,
+.singleResult .player-stats h3{
+    text-align: center;
+}
+
+.singleResult .team-players h4{
+    text-align: center;
+}
+
+.singleResult .player-table thead th{
+    text-align: center;
+}
+.singleResult .match-info{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
