@@ -902,6 +902,7 @@ body {
     padding: 10px 0px;
     padding-left: 50px;
     padding-right: 20px;
+
 }
 
 .prediction-page .match-time{
@@ -950,6 +951,20 @@ body {
     color: #2a5298;
     font-size: 20px;
     margin-bottom: 10px;
+
+}
+.prediction-page .ai-prediction p{
+    font-size: 22px;
+    font-weight: bold;
+    background-color: #e6e6e6;
+    width: 100px ;
+    display: block;
+    align-items: center;
+    margin: 0 auto;
+    border-radius: 6px;
+    padding: 3px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
 
 }
 
@@ -1057,4 +1072,145 @@ body {
 }
 .prediction-page .view-bets-link:hover{
     text-decoration: underline;
+}
+
+/*Single result html css*/
+/* .singleResult{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+} */
+
+.singleResult .teams-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+
+}
+
+.singleResult .team-home-team,
+.singleResult .team-away-team{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+
+.singleResult .team-crest{
+ width: 140px;
+ height: 140px;
+ object-fit: contain;
+ margin-bottom: 8px;   
+}
+
+.singleResult .match-info{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.singleResult .match-time{
+    font-size: 20px;
+    font-weight: bold;
+    background: #2a5298;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.singleResult .match-date{
+    font-size: 16px;
+    font-weight: bold;
+    color: #2a5298;
+    padding: 5px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.singleResult .score-container{
+    text-align: center;
+    margin: 20px 0;
+}
+.singleResult .final-score{
+    font-size: 32px;
+    font-weight: bold;
+    padding: 12px 20px;
+    background: #2a5298;
+    color: white;
+    border-radius: 5px;
+    display: inline-block;
+}
+.singleResult .match-stats{
+    margin-top: 20px;
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+.singleResult .stats-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+
+}
+
+.singleResult .stats-table td{
+    padding: 10px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.singleResult .stat-label{
+    font-weight: bold;
+    background: #f2f3f5;
+    padding: 8px;
+}
+
+.singleResult .player-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: #ffffff;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.singleResult .player-table th{
+    background: #2a5298;
+    color: white;
+    padding: 10px;
+
+}
+.singleResult .player-table td{
+    padding: 8px;
+    border-bottom: 1px solid ;
+    text-align: center;
+}
+
+.singleResult .match-stats h3,
+.singleResult .player-stats h3{
+    text-align: center;
+}
+
+.singleResult .team-players h4{
+    text-align: center;
+}
+
+.singleResult .player-table thead th{
+    text-align: center;
+}
+.singleResult .match-info{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
