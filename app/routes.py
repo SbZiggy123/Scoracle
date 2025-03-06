@@ -3,7 +3,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_league_leaderboard
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -185,20 +185,17 @@ async def league_update():
     async with aiohttp.ClientSession() as session_obj:
         understat = Understat(session_obj)
         results = await understat.get_league_results("epl", 2024)
-        # Find the match with the given match_id
         match = next((result for result in results if result["id"] == match_id), None)
         
         if match:
             home_goals = match["goals"]["h"]
             away_goals = match["goals"]["a"]
-            # Import and process bets via models.py
-            from .models import process_match_bets, get_league_leaderboard
+            from .models import process_match_bets
             process_match_bets(match_id, home_goals, away_goals)
-            updated_leaderboard = get_league_leaderboard(league_id)
-            return jsonify({"success": True, "leaderboard": updated_leaderboard})
-        else:
-            # If result is not yet available, simply return a flag
-            return jsonify({"success": False, "message": "Match result not available yet."})
+            
+    from .models import get_league_leaderboard
+    updated_leaderboard = get_league_leaderboard(league_id)
+    return jsonify({"success": True, "leaderboard": updated_leaderboard})
 
 @main.route('/myLeagues')
 def my_leagues():
@@ -547,7 +544,7 @@ async def home():
         async with aiohttp.ClientSession() as understat_session:
             understat = Understat(understat_session)
             user = get_user(session["username"])
-            totalLeagues = len(get_user_leagues(user))
+            totalLeagues = len(get_user_leagues(user["username"]))
             teams = await understat.get_teams("epl", 2024)
             team_names = []
             for team in teams:

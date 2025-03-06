@@ -21,6 +21,7 @@
     {% else %}
       <p>No members yet.</p>
     {% endif %}
+
     <h2 class="leaderboard-title">Leaderboard</h2>
     <div class="leaderboard-container">
       <table class="leaderboard-table">
@@ -31,7 +32,7 @@
             <th>Score</th>
           </tr>
         </thead>
-        <tbody id="leaderboardTableBody">
+        <tbody id="leaderboard">
           {% for player in league.leaderboard %}
             <tr>
               <td>{{ loop.index }}</td>
@@ -42,6 +43,7 @@
         </tbody>
       </table>
     </div>
+
     <div class="fixtures-container">
       {% for fixture in upcoming_fixtures %}
       <div class="match-item">
@@ -55,22 +57,22 @@
                 Bet
               </button>
             </form>
-              <div class="match-teams">
-                  <a href="{{ url_for('main.fixtures', team_name=fixture.h.title)}}" class="team-link">
-                      <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
-                      <span class="team-name">{{ fixture.h.title }}</span>
-                  </a>
-                  <span class="score">vs</span>
-                  <a href="{{ url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
-                      <span class="team-name">{{ fixture.a.title }}</span>
-                      <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
-                  </a>
-              </div>
-              <form action="javascript:void(0);" class="bet-form">
-                <button type="button" class="bet-button" onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'away', this)">
-                  Bet
-                </button>
-              </form>
+            <div class="match-teams">
+              <a href="{{ url_for('main.fixtures', team_name=fixture.h.title) }}" class="team-link">
+                  <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
+                  <span class="team-name">{{ fixture.h.title }}</span>
+              </a>
+              <span class="score">vs</span>
+              <a href="{{ url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
+                  <span class="team-name">{{ fixture.a.title }}</span>
+                  <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
+              </a>
+            </div>
+            <form action="javascript:void(0);" class="bet-form">
+              <button type="button" class="bet-button" onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'away', this)">
+                Bet
+              </button>
+            </form>
           </div>
       </div>
       {% endfor %}
