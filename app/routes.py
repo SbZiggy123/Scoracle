@@ -6,7 +6,6 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from config import ALLOWED_EXTENSIONS
 from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
