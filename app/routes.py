@@ -1,17 +1,26 @@
 import os
+import uuid
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_user_player_predictions, save_player_prediction
+from werkzeug.utils import secure_filename
+from config import ALLOWED_EXTENSIONS
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
 
 main = Blueprint('main', __name__)
-    
+app = Flask(__name__)
+
+UPLOAD_FOLDER = 'static/profilepics/'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
     # Initialize database before the first request
 @main.before_app_request
 def initialise_database():
@@ -686,34 +695,51 @@ async def home():
     else:
         async with aiohttp.ClientSession() as understat_session:
             understat = Understat(understat_session)
-            user = get_user(session["username"])
+            user = session["username"]
+            profile_pic = get_profile_pic(user)
             totalLeagues = len(get_user_leagues(user))
             teams = await understat.get_teams("epl", 2024)
             team_names = []
             for team in teams:
                 team_name = team["title"]
                 team_names.append(team_name)
-    return render_template("home.html", totalLeagues=totalLeagues, username=session["username"], team_names=team_names)
+    return render_template("home.html", leagues=totalLeagues, profile_pic=profile_pic, username=session["username"], team_names=team_names)
 
-@main.route("/update", methods=["POST"])
+@main.route("/update", methods=["GET", "POST"])
 def update():
-    form = UpdateForm()
-    current_user = session["username"]
-    if form.validate_on_submit():
-        username = form.username.data
-        favourite_team = form.favourite_team.data
-        uploaded_file = request.files['profile_pic']
+    form = UpdateForm
+    db = get_db_connection()
+    new_username = request.form.get('username')
+    favourite_team = request.form.get('favourite_team')
+    file = request.files.get('profile_pic')
+    user = session["username"]
 
-        if username:
-            update_user(current_user, "username", username)
+    if user:
+        if new_username:
+            update_user(user, 'username', new_username)
         if favourite_team:
-            update_user(current_user, "favourite_team", favourite_team)
-        if uploaded_file != '':
-            uploaded_file.save(os.path.join('static/profilepics', current_user.get_id()))
-    return render_template("home.html")
+            update_user(user, 'favourite_team', favourite_team)
+        if file:
+            filename = secure_filename(file.filename)
+            pic_name = str(uuid.uuid1()) + "_" + filename
+            saver = request.files['profile_pic']
+            file = pic_name
+            try:
+                db.session.commit()
+                saver.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                flash("User updated successfully!")
+                return render_template("home.html", form=form)
+            except:
+                flash("There was a problem!")
+                return render_template("home.html", form=form)
+        else:
+            db.session.commit()
+            flash("User updated successfully!")
+            return render_template("home.html", form=form)
+    return render_template("home.html", form=form)
 
 class UpdateForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
-    favourite_team = SelectField('favourite_team', validate_choice=False)
-    profile_pic = FileField('image')
-    submit = SubmitField('Update')
+    favourite_team = SelectField('Favortie Team', validate_choice=False)
+    profile_pic = FileField('Change Profile Picture')
+    update = SubmitField("Update")
