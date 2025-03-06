@@ -4,7 +4,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -150,6 +150,56 @@ async def league(league_id):
 
     return render_template("league.html", league=league, upcoming_fixtures=upcoming_fixtures)
 
+@main.route('/place_bet', methods=['POST'])
+def place_bet_route():
+    if "username" not in session:
+        return jsonify({"success": False, "message": "You must be logged in to bet"}), 403
+
+    user = get_user(session["username"])
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+    
+    data = request.json
+    league_id = data.get("league_id")
+    match_id = data.get("match_id")
+    bet_amount = data.get("bet_amount")
+    prediction = data.get("prediction")
+
+    if not all([league_id, match_id, bet_amount, prediction]):
+        return jsonify({"success": False, "message": "Missing data"}), 400
+
+    result = place_bet(user["id"], league_id, match_id, bet_amount, prediction)
+    return jsonify(result)
+
+@main.route("/league_update", methods=["GET"])
+async def league_update():
+    if "username" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 403
+
+    league_id = request.args.get("league_id")
+    match_id = request.args.get("match_id")
+    
+    if not league_id or not match_id:
+        return jsonify({"success": False, "message": "Missing parameters"}), 400
+
+    # Use Understat to fetch match results
+    async with aiohttp.ClientSession() as session_obj:
+        understat = Understat(session_obj)
+        results = await understat.get_league_results("epl", 2024)
+        # Find the match with the given match_id
+        match = next((result for result in results if result["id"] == match_id), None)
+        
+        if match:
+            home_goals = match["goals"]["h"]
+            away_goals = match["goals"]["a"]
+            # Import and process bets via models.py
+            from .models import process_match_bets, get_league_leaderboard
+            process_match_bets(match_id, home_goals, away_goals)
+            updated_leaderboard = get_league_leaderboard(league_id)
+            return jsonify({"success": True, "leaderboard": updated_leaderboard})
+        else:
+            # If result is not yet available, simply return a flag
+            return jsonify({"success": False, "message": "Match result not available yet."})
 
 @main.route('/myLeagues')
 def my_leagues():

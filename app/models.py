@@ -72,13 +72,25 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     league_id INTEGER NOT NULL,
-                    score INTEGER DEFAULT 0,
+                    score INTEGER DEFAULT 1000,
                     FOREIGN KEY (user_id) REFERENCES users (id),
                     FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id),
-                    UNIQUE (user_id, league_id) /* Prevent duplicates */
+                    UNIQUE (user_id, league_id)
                 )
             ''')
-            """League members go here"""
+            c.execute('''        
+                CREATE TABLE IF NOT EXISTS LeagueBets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    league_id INTEGER NOT NULL,
+                    match_id TEXT NOT NULL,
+                    bet_amount INTEGER NOT NULL,
+                    prediction TEXT CHECK(prediction IN ('home', 'away', 'draw')) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id)
+                )'''
+            )
             conn.commit()
         except Error as e:
             print(f"Error creating database: {e}")
@@ -427,7 +439,7 @@ def add_user_to_league(username, league_id):
             updated_user_leagues = f"{user_leagues},{league_id}".strip(",")
             c.execute("UPDATE users SET leagues = ? WHERE username = ?", (updated_user_leagues, username))
 
-            c.execute("INSERT OR IGNORE INTO league_scores (user_id, league_id, score) VALUES (?, ?, 0)", 
+            c.execute("INSERT OR IGNORE INTO league_scores (user_id, league_id, score) VALUES (?, ?, 1000)", 
                       (user_id, league_id))
 
             conn.commit()
@@ -510,3 +522,91 @@ def update_league_score(user_id, league_id, points):
         finally:
             conn.close()
     return False
+
+def place_bet(user_id, league_id, match_id, bet_amount, prediction):
+    """Allows a user to place a bet on a match using their league score as currency."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Check if the user has enough points
+            c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = ?", (user_id, league_id))
+            user_score = c.fetchone()
+            
+            if not user_score or user_score[0] < bet_amount:
+                return {"success": False, "message": "Insufficient points to place bet"}
+            
+            # Deduct points from the user's score
+            new_score = user_score[0] - bet_amount
+            c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = ?", 
+                      (new_score, user_id, league_id))
+
+            # Insert the bet into the table
+            c.execute('''
+                INSERT INTO LeagueBets (user_id, league_id, match_id, bet_amount, prediction)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (user_id, league_id, match_id, bet_amount, prediction))
+            
+            conn.commit()
+            return {"success": True, "message": "Bet placed successfully"}
+        except Exception as e:
+            print(f"Error placing bet: {e}")
+            return {"success": False, "message": "Error placing bet"}
+        finally:
+            conn.close()
+    return {"success": False, "message": "Database connection failed"}
+
+def process_match_bets(match_id, home_goals, away_goals):
+    """Process all bets for a given match and update user scores accordingly."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            # Determine match outcome
+            if home_goals > away_goals:
+                actual_result = "home"
+            elif away_goals > home_goals:
+                actual_result = "away"
+            else:
+                actual_result = "draw"
+            
+            # Fetch bets for this match
+            c.execute("SELECT id, user_id, league_id, bet_amount, prediction FROM bets WHERE match_id = ?", (match_id,))
+            bets = c.fetchall()
+            
+            for bet in bets:
+                bet_id, user_id, league_id, bet_amount, prediction = bet
+                if prediction == actual_result:
+                    winnings = bet_amount * 2  # Example: payout is 2x the bet
+                    c.execute(
+                        "UPDATE league_scores SET score = score + ? WHERE user_id = ? AND league_id = ?",
+                        (winnings, user_id, league_id)
+                    )
+                # Remove the processed bet
+                c.execute("DELETE FROM bets WHERE id = ?", (bet_id,))
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error processing match bets: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+def get_user_bets(user_id, league_id):
+    """Fetch all bets for a given user and league."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT * FROM bets WHERE user_id = ? AND league_id = ?", (user_id, league_id))
+            bets = c.fetchall()
+            return [dict(bet) for bet in bets]
+        except Exception as e:
+            print(f"Error fetching user bets: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
