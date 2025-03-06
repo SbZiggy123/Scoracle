@@ -515,28 +515,6 @@ Could probably add more*/
 }
 
 
-
-
-/* Create a league styling */
-.createSubmit{
-    color: black;
-    background: linear-gradient(45deg , green, white, blue);
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer;
-    width: 50%;
-    transition: background 0.3s ease, transform 0.2s ease;
-    font-weight: bold;
-    
-
-}
-
-.createSubmit:hover{
-    background: linear-gradient(225deg, blue, white, green);
-}
-
 body {
     margin: 0;
     background: black; /* Base color */
@@ -685,6 +663,11 @@ body {
     align-items: center;
     gap: 8px;
 }
+.team{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
 .team-crest {
     width: 25px;
@@ -772,6 +755,11 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 15px; /* Adds spacing between matches */
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 15px;
+
 }
 
 .match-item {
@@ -784,6 +772,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     padding: 15px;
+    margin-bottom: 15px;
 }
 
 .match-date {
@@ -834,8 +823,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-grow: 2;
-    gap: 15px;
+    width: 100%;
+    /* flex-grow: 2; */
+    gap: 30px;
     text-align: center;
 }
 
@@ -1214,3 +1204,87 @@ body {
     flex-direction: column;
     justify-content: center;
 }
+
+/* create-league css*/
+.create-league{
+    max-width: 750px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    height: 100vh;
+    width: 100%;
+    margin: 0 auto;
+    border-radius: 20px;
+
+}
+
+.create-league .grid-container{
+    width: 100%;
+    max-width: 650px;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    padding-bottom: 300px;
+    border-radius: 20px;
+}
+
+.create-league input{
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid;
+    border-radius: 5px;
+    background: #f8f8f8;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.create-league form{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+}
+.create-league label{
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2a5298;
+}
+
+.create-league input,
+.create-league select{
+    width: 100%;
+    max-width: 350px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid;
+    border-radius: 5px;
+    background: #f8f8f8f8;
+    transition: 0.3s ease-in-out;
+}
+
+.create-league input:focus,
+.create-league select:focus{
+    border-color: #2a5298;
+    background: #ffffff;
+    outline: none;
+}
+
+.create-league .createSubmit{
+    background: #2a5298;
+    color: white;
+    max-width: 450px;
+    font-size: 18px;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+}
+
+.create-league .createSubmit:hover{
+    background: #1e3c72;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
