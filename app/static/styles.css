@@ -1570,11 +1570,9 @@ body {
 
 /* fixtures page css*/
 
-<<<<<<< HEAD
 .fixtures .team-crest{
     width: 100px;
     height: 100px;
-=======
 
 
 /* PLAYER PREDICTION */
@@ -1714,5 +1712,4 @@ body {
 
 #save-all-player-predictions:hover {
     background-color: #1e3c72;
->>>>>>> acf69b5bb9a9831cfe474c6ca1bcd5e50db6488b
 }
