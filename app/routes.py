@@ -1,9 +1,9 @@
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_session import Session
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField
+from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -434,7 +434,6 @@ async def single_result(match_id):
             match_players = await understat.get_match_players(match_id)
             match_shots = await understat.get_match_shots(match_id)
 
-                
             # for table popup gonna do
             
             home_stats = {
@@ -555,3 +554,27 @@ async def home():
                 team_name = team["title"]
                 team_names.append(team_name)
     return render_template("home.html", totalLeagues=totalLeagues, username=session["username"], team_names=team_names)
+
+@main.route("/update")
+def update():
+    form = UpdateForm()
+    current_user = session["username"]
+    if form.validate_on_submit():
+        username = form.username.data
+        favourite_team = form.favourite_team.data
+        profile_pic = form.profile_pic.data
+
+        if username:
+            update_user(current_user, "username", username)
+        if favourite_team:
+            update_user(current_user, "favourite_user", favourite_team)
+        if profile_pic:
+            update_user(current_user, "profile_pic", profile_pic)
+            
+    return url_for("/home")
+
+class UpdateForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
+    favourite_team = SelectField()
+    profile_pic = FileField('image')
+    submit = SubmitField('Update')

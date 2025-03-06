@@ -30,6 +30,7 @@ def init_db():
                     password_hash TEXT NOT NULL,
                     leagues TEXT DEFAULT '',
                     favourite_team TEXT DEFAULT '',
+                    profile_pic TEXT DEFAULT 'login.png',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -132,15 +133,14 @@ def get_user(username):
             conn.close()
     return None
 
-def update_user(username, new_username, favourite_team):
+def update_user(username, update_field, update_item):
     """Retrieve a user from the database and update user details based on dashboard form."""
-    """Unfinished"""
     conn = get_db_connection()
     #Catch any errors finding users.
     if conn is not None:
         try:
             c = conn.cursor()
-            c.execute('SELECT * FROM users WHERE username = ?', (username,))
+            c.execute('SELECT * FROM users WHERE username = ?', (username))
             user = c.fetchone()
             if user:
                 return dict(user)
@@ -151,9 +151,9 @@ def update_user(username, new_username, favourite_team):
         finally:
             c.execute('''
             UPDATE users 
-            SET username = ?, favourite_team = ?
-            WHERE username = ? 
-            ''', (new_username, favourite_team, username))
+            SET ? = ?,
+            WHERE username = ?, 
+            ''', (update_field, update_item, username))
             conn.close()    
     return None
 

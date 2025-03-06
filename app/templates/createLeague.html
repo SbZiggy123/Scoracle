@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
 {% block main_content %}
+<div class="create-league">
 <div class="grid-container">
     <main>
         <form method="POST" action="{{ url_for('main.create_league') }}">
           <label>League Name</label>
-          <input type="text" name="league_name" id="leagueName" required>
+          <input type="text" class="leagueName" name="league_name" id="leagueName" required>
 
           <label>Type of League</label>
           <select name="league_type" id="leagueType" required>
@@ -24,4 +25,5 @@
 
     </main>
     </div>
+</div>
 {% endblock %}
