@@ -4,7 +4,8 @@ from flask_session import Session
 from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_user_player_predictions, save_player_prediction
+from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
@@ -255,6 +256,43 @@ async def prediction(match_id):
     form = PredictionForm()
     # Create a prediction system instance
     prediction_system = PredictionSystem()
+    player_prediction_system = PlayerPredictionSystem()
+    
+    try:
+        # Get player prediction data
+        player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+        
+        # Process player data for template
+        home_players = []
+        away_players = []
+        
+        if player_data:
+            # Calculate expected stats for each player
+            for player in player_data["home_players"]:
+                expected_stats = player_prediction_system.calculate_player_expected_stats(player)
+                player["expected_stats"] = expected_stats
+                home_players.append(player)
+                
+            for player in player_data["away_players"]:
+                expected_stats = player_prediction_system.calculate_player_expected_stats(player)
+                player["expected_stats"] = expected_stats
+                away_players.append(player)
+            
+        # Get user's existing player predictions if logged in
+        user_player_predictions = {}
+        if "username" in session:
+            user = get_user(session["username"])
+            if user:
+                predictions = get_user_player_predictions(user["id"], match_id)
+                for pred in predictions:
+                    user_player_predictions[pred["player_id"]] = pred
+    except Exception as e:
+        import traceback
+        print(f"Error getting player prediction data: {e}")
+        print(traceback.format_exc())
+        home_players = []
+        away_players = []
+        user_player_predictions = {}
     
     try:
         prediction_data = await prediction_system.predict_match(match_id, 2024)
@@ -387,8 +425,109 @@ async def prediction(match_id):
         away_expected=prediction_data['away_expected'],
         league_positions=await prediction_system.get_league_positions(2024),
         home_weight=prediction_system.home_weight, # for now
-        user_prediction=user_prediction
+        user_prediction=user_prediction,
+        home_players=home_players,
+        away_players=away_players,
+        user_player_predictions=user_player_predictions
     )
+    
+#need endpoints
+@main.route('/api/player-predictions/<match_id>', methods=['GET'])
+async def get_player_predictions(match_id):
+    """Get likely players for a match and their stats"""
+    player_prediction_system = PlayerPredictionSystem()
+    
+    try:
+        player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+        
+        if not player_data:
+            return jsonify({"error": "Match not found"})
+            
+        # Expected stats
+        for team in ["home_players", "away_players"]:
+            for i, player in enumerate(player_data[team]):
+                expected_stats = player_prediction_system.calculate_player_expected_stats(player)
+                player_data[team][i]["expected_stats"] = expected_stats
+        
+        
+        if "username" in session:
+            user = get_user(session["username"])
+            if user:
+                predictions = get_user_player_predictions(user["id"], match_id)
+                player_data["user_predictions"] = predictions
+        
+        return jsonify(player_data)
+    # Error
+    except Exception as e:
+        import traceback
+        print(f"Error getting player predictions: {e}")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)})
+
+@main.route('/api/player-predictions/<match_id>', methods=['POST'])
+async def save_player_predictions(match_id):
+    """Save a user's player predictions"""
+    if "username" not in session:
+        return jsonify({"error": "You must be logged in to make predictions"})
+    
+    user = get_user(session["username"])
+    if not user:
+        return jsonify({"error": "User not found"})
+    
+    # Get prediction data from request
+    data = request.json
+    if not data or not isinstance(data, list):
+        return jsonify({"error": "Invalid prediction data"})
+    
+    player_prediction_system = PlayerPredictionSystem()
+    
+    # Get player data to calculate multipliers
+    player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+    
+    # Create a map of player IDs to their data as a dict
+    player_dict = {}
+    for team in ["home_players", "away_players"]:
+        for player in player_data[team]:
+            player_dict[player["id"]] = player
+    
+    results = []
+    
+    for prediction in data:
+        player_id = prediction.get("player_id")
+        goals = prediction.get("goals", 0)
+        shots = prediction.get("shots", 0)
+        minutes = prediction.get("minutes", 0)
+        
+        if not player_id or player_id not in player_dict:
+            results.append({
+                "player_id": player_id,
+                "success": False,
+                "message": "Player not found"
+            })
+            continue
+        
+        # Calculate points and multiplier
+        player = player_dict[player_id]
+        points_data = player_prediction_system.calculate_points(
+            player, goals, shots, minutes
+        )
+        
+        # Save prediction
+        success = save_player_prediction(
+            user["id"], match_id, player_id,
+            goals, shots, minutes,
+            multiplier=points_data["multiplier"],
+            potential_points=points_data["potential_points"]
+        )
+        
+        results.append({
+            "player_id": player_id,
+            "success": success,
+            "multiplier": points_data["multiplier"],
+            "potential_points": points_data["potential_points"]
+        })
+    
+    return jsonify({"results": results})
 
 @main.route('/yourBets')
 async def yourBets():
