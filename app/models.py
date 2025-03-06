@@ -149,11 +149,14 @@ def update_user(username, update_field, update_item):
             print(f"Error retrieving user: {e}")
             return None
         finally:
-            c.execute('''
-            UPDATE users 
-            SET ? = ?,
-            WHERE username = ?, 
-            ''', (update_field, update_item, username))
+            allowed_fields = {"username", "favourite_team", "profile_pic"}  # List of allowed fields
+            if update_field not in allowed_fields:
+                raise ValueError("Invalid field name!")  # Prevent SQL injection
+
+            # Build the SQL query dynamically
+            query = f"UPDATE users SET {update_field} = ? WHERE username = ?"
+
+            c.execute(query, (update_item, username))            
             conn.close()    
     return None
 
@@ -610,3 +613,18 @@ def get_user_bets(user_id, league_id):
         finally:
             conn.close()
     return []
+
+def get_profile_pic(user):
+    """Fetch a private league by its unique code."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT profile_pic FROM users WHERE user = ?", (user,))
+            profile_pic = c.fetchone()
+        except Error as e:
+            print(f"Error fetching profile picture: {e}")
+            return None
+        finally:
+            conn.close()
+    return profile_pic
