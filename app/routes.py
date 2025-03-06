@@ -1,3 +1,4 @@
+import os
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_session import Session
 from flask_wtf import FlaskForm
@@ -505,26 +506,25 @@ async def home():
                 team_names.append(team_name)
     return render_template("home.html", totalLeagues=totalLeagues, username=session["username"], team_names=team_names)
 
-@main.route("/update")
+@main.route("/update", methods=["POST"])
 def update():
     form = UpdateForm()
     current_user = session["username"]
     if form.validate_on_submit():
         username = form.username.data
         favourite_team = form.favourite_team.data
-        profile_pic = form.profile_pic.data
+        uploaded_file = request.files['profile_pic']
 
         if username:
             update_user(current_user, "username", username)
         if favourite_team:
-            update_user(current_user, "favourite_user", favourite_team)
-        if profile_pic:
-            update_user(current_user, "profile_pic", profile_pic)
-            
-    return url_for("/home")
+            update_user(current_user, "favourite_team", favourite_team)
+        if uploaded_file != '':
+            uploaded_file.save(os.path.join('static/profilepics', current_user.get_id()))
+    return render_template("home.html")
 
 class UpdateForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
-    favourite_team = SelectField()
+    favourite_team = SelectField('favourite_team', validate_choice=False)
     profile_pic = FileField('image')
     submit = SubmitField('Update')

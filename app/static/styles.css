@@ -506,6 +506,7 @@ Could probably add more*/
 }
 
 .dash-head p{
+    font-size: x-large;
     padding: 10%;
     margin: 10%;
     border: 1px solid;
@@ -515,9 +516,8 @@ Could probably add more*/
 
 .dash-head .profile-pic{
     position: right;
-    width: 50%;
+    max-width: 60%;
     padding-left: 40%;
-    padding-right: 10%;
 }
 
 .dash-head .logout{
