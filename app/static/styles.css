@@ -560,32 +560,6 @@ Could probably add more*/
 }
 
 
-<<<<<<< HEAD
-=======
-
-
-/* Create a league styling */
-.createSubmit{
-    color: black;
-    background: linear-gradient(45deg , green, white, blue);
-    padding: 10px 15px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer;
-    width: 50%;
-    transition: background 0.3s ease, transform 0.2s ease;
-    font-weight: bold;
-    
-
-}
-
-.createSubmit:hover{
-    background: linear-gradient(225deg, blue, white, green);
-}
-
->>>>>>> 8793c7bdbd6a05e10f1946446fb7cf3d595987fd
 body {
     margin: 0;
     background: black; /* Base color */
