@@ -514,10 +514,15 @@ Could probably add more*/
     text-align: left;
 }
 
+.dashboard a{
+    color: red;
+    text-decoration: underline;
+}
+
 .dash-head .profile-pic{
     position: right;
-    max-width: 60%;
-    padding-left: 40%;
+    max-width: 70%;
+    padding: 20% 15% 20% 15%;
 }
 
 .dash-head .logout{
