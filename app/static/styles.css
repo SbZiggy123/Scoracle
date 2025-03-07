@@ -448,7 +448,7 @@ Could probably add more*/
     color: #333; 
     text-transform: uppercase; 
     text-align: center;
-    padding: 95px;
+    padding: 0 95px;
 }
 .premier-league .team-crest{
     width: 80px;
