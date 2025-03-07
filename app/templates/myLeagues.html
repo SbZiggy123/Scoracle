@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
 {% block main_content %}
+<div class="my-leagues">
 <div class="grid-container">
-    <main>
+    <main class="leagues-content">
         <h1>My Leagues</h1>
         
         {% if leagues %}
-            <ul>
+            <ul class="league-list">
                 {% for league in leagues %}
-                    <li>
+                    <li class="league-item">
                         <a href="{{ url_for('main.league', league_id=league.id) }}">
                             {{ league.name }}
                         </a>
@@ -16,9 +17,9 @@
                 {% endfor %}
             </ul>
         {% else %}
-            <p>You are not in any leagues yet.</p>
+            <p class="no-leagues">You are not in any leagues yet.</p>
         {% endif %}
     </main>
-
+</div>
 </div>
 {% endblock %}

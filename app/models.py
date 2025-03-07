@@ -68,6 +68,26 @@ def init_db():
                     UNIQUE (user_id, match_id)
                 )
             ''')
+            
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS user_player_predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    match_id TEXT NOT NULL,
+                    player_id TEXT NOT NULL,
+                    goals_prediction INTEGER DEFAULT 0,
+                    shots_prediction INTEGER DEFAULT 0,
+                    minutes_prediction INTEGER DEFAULT 0,
+                    multiplier REAL DEFAULT 1.0,
+                    potential_points INTEGER DEFAULT 100,
+                    points_earned INTEGER DEFAULT NULL,
+                    prediction_correct BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    UNIQUE (user_id, match_id, player_id)
+                )
+            ''')
+            
             #League Specific User Scores
             c.execute('''
                 CREATE TABLE IF NOT EXISTS league_scores (
@@ -138,11 +158,14 @@ def update_user(username, update_field, update_item):
             print(f"Error retrieving user: {e}")
             return None
         finally:
-            c.execute('''
-            UPDATE users 
-            SET ? = ?,
-            WHERE username = ?, 
-            ''', (update_field, update_item, username))
+            allowed_fields = {"username", "favourite_team", "profile_pic"}  # List of allowed fields
+            if update_field not in allowed_fields:
+                raise ValueError("Invalid field name!")  # Prevent SQL injection
+
+            # Build the SQL query dynamically
+            query = f"UPDATE users SET {update_field} = ? WHERE username = ?"
+
+            c.execute(query, (update_item, username))            
             conn.close()    
     return None
 
@@ -253,6 +276,84 @@ def get_user_predictions(user_id, limit=10):
             return [dict(prediction) for prediction in predictions]
         except Error as e:
             print(f"Error getting user predictions: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
+
+def save_player_prediction(user_id, match_id, player_id, goals_prediction, shots_prediction, minutes_prediction, 
+                         multiplier=1.0, potential_points=100):
+    """Save or update a user's player prediction."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            # Check if prediction already exists
+            c.execute('''SELECT id FROM user_player_predictions 
+                         WHERE user_id = ? AND match_id = ? AND player_id = ?''',
+                     (user_id, match_id, player_id))
+            existing = c.fetchone()
+            
+            if existing:
+                # Update
+                update_sql = '''
+                    UPDATE user_player_predictions 
+                    SET goals_prediction = ?, shots_prediction = ?, minutes_prediction = ?,
+                        multiplier = ?, potential_points = ?, created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                '''
+                params = (goals_prediction, shots_prediction, minutes_prediction,
+                         multiplier, potential_points, existing[0])
+                c.execute(update_sql, params)
+            else:
+                # Insert new prediction
+                insert_sql = '''
+                    INSERT INTO user_player_predictions
+                    (user_id, match_id, player_id, goals_prediction, shots_prediction, 
+                     minutes_prediction, multiplier, potential_points)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                '''
+                params = (user_id, match_id, player_id, goals_prediction, shots_prediction,
+                         minutes_prediction, multiplier, potential_points)
+                c.execute(insert_sql, params)
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"ERROR saving player prediction: {e}")
+            import traceback
+            print(traceback.format_exc())
+            return False
+        finally:
+            conn.close()
+    return False
+
+def get_user_player_predictions(user_id, match_id=None):
+    """Get player predictions for a user, optionally filtered by match."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            if match_id:
+                # Get predictions for  match
+                c.execute('''
+                    SELECT * FROM user_player_predictions
+                    WHERE user_id = ? AND match_id = ?
+                    ORDER BY created_at DESC
+                ''', (user_id, match_id))
+            else:
+                # Get all player predictions
+                c.execute('''
+                    SELECT * FROM user_player_predictions
+                    WHERE user_id = ?
+                    ORDER BY created_at DESC
+                ''', (user_id,))
+                
+            predictions = c.fetchall()
+            return [dict(prediction) for prediction in predictions]
+        except Error as e:
+            print(f"Error getting user player predictions: {e}")
             return []
         finally:
             conn.close()
@@ -639,3 +740,18 @@ def get_user_bets(user_id, league_id):
         finally:
             conn.close()
     return []
+
+def get_profile_pic(user):
+    """Fetch a private league by its unique code."""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            c.execute("SELECT profile_pic FROM users WHERE user = ?", (user,))
+            profile_pic = c.fetchone()
+        except Error as e:
+            print(f"Error fetching profile picture: {e}")
+            return None
+        finally:
+            conn.close()
+    return profile_pic

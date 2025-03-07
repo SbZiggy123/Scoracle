@@ -5,22 +5,22 @@
       <main class="dashboard">
         <h1>Welcome to Scoracle, {{ username }}</h1>
         <div class="dash-head">
-          {% if leagues %}
-            <p>You are in {{ totalLeagues }} Leagues!</p>
-            <p></p>
-          {% else %}
-            <p>You are not in any leagues yet.</p>
-            <img class="profile-pic" src="{{ url_for('static', filename='login.png') }}" alt="Profile picture">
+            <p>You are in {{ leagues }} Leagues! View them <a href="{{ url_for('main.my_leagues') }}">here</a>!</p>
+            {% if profile_pic %}
+              <img class="profile-pic" src={{profile_pic}} alt="Profile picture">
+            {% else %}
+              <img class="profile-pic" src="{{ url_for('static', filename='login.png') }}" alt="Profile picture">
+            {% endif %}
+            <p>Profile Pic URL: {{ profile_pic }}</p>
             <p>Look for leagues <a href="{{ url_for('main.join_league') }}">here</a>!</p>
             <p>Create a league <a href="{{ url_for('main.create_league') }}">here</a>!</p>
-          {% endif %}
         </div> 
         <a class="logout" href="{{ url_for('main.logout') }}">Logout</a>
 
 
         <div class="Update">
           <h1>Update</h1>
-          <form class="Update" method="POST" action="{{ url_for('main.update') }}">
+          <form class="Update" method="POST" action="{{ url_for('main.update') }}" enctype="multipart/form-data">
             <label>Username:</label>
             <input type="text" name="username" id="new_username">
             
@@ -28,7 +28,7 @@
             <select name="favourite_team" id="favourite_team">
               <option value="Default">Select a Team!</option>
               {% for team in team_names %}
-              <option value="{{ team }}">{{ team }}</option>
+                <option value="{{ team }}">{{ team }}</option>
               {% endfor %}
             </select>
 
