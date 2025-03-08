@@ -435,14 +435,19 @@ def get_league_by_id(league_id):
     return None
 
 def get_public_leagues():
-    """Fetch all public fantasy leagues from the database."""
+    """Fetch all public fantasy leagues with creator names."""
     conn = get_db_connection()
     if conn is not None:
         try:
             c = conn.cursor()
-            c.execute("SELECT id, league_name FROM fantasyLeagues WHERE privacy = 'Public'")
+            c.execute("""
+                SELECT f.id, f.league_name, f.league_type, f.privacy, f.members, f.created_at, u.username as creator
+                FROM fantasyLeagues f
+                JOIN users u ON f.members LIKE u.username || '%'  -- Get the first user in the members list
+                WHERE f.privacy = 'Public'
+            """)
             leagues = c.fetchall()
-            return [{"id": row[0], "name": row[1]} for row in leagues]
+            return [{"id": row[0], "name": row[1], "league_type": row[2], "members": row[4], "created_at": row[5], "creator": row[6]} for row in leagues]
         except Error as e:
             print(f"Error fetching public leagues: {e}")
             return []

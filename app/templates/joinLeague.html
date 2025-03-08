@@ -2,41 +2,58 @@
 
 {% block main_content %}
 <div class="join-league">
-<div class="grid-container">
-  <main class="league-container">
-    <div class="join-form">
-      <h2>Join A Private League</h2>
-      <form method="POST" action="{{ url_for('main.join_league') }}">
-      <label>Enter Private League Code:</label>
-      <input type="text" name="league_code" required>
-      <button type="submit" class="private-join">Join</button>
-    </form>
-    </div>
-  </div>
+  <div class="grid-container">
+    <main class="league-container">
+      <!-- Join Private League Form -->
+      <div class="join-form">
+        <h2>Join A Private League</h2>
+        <form method="POST" action="{{ url_for('main.join_league') }}">
+          <input type="text" name="league_code" required placeholder="Enter Code...">
+          <button type="submit" class="private-join">Join</button>
+        </form>
+      </div>
+
+    <!-- Public Leagues List -->
     <div class="public-leagues">
-    <h1>Public Leagues</h1>
-    {% if leagues %}
-      <ul class="league-list">
-        {% for league in leagues %}
-          <li class="league-item">
-            <span class="league-name">
-            <a href="{{ url_for('main.league', league_id=league.id) }}">{{ league.name }}</a>
-          </span>
-            {% if league.id|string not in user_leagues %}
-              <form action="{{ url_for('main.join_public_league', league_id=league.id) }}" method="POST" style="display:inline;" class="join-form">
-                <button type="submit" class="btn-join">JOIN</button>
-              </form>
-            {% else %}
-              <button disabled class="btn-disabled">Already Joined</button>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="no-leagues">No public leagues available.</p>
-    {% endif %}
-  </div>
+      <h1>Public Leagues</h1>
+      {% if leagues %}
+        <table class="league-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Players</th>
+              <th>Type</th>
+              <th>Created</th>
+              <th>Creator</th>
+              <th> </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for league in leagues %}
+              <tr>
+                <td><a href="{{ url_for('main.league', league_id=league.id) }}">{{ league.name }}</a></td>
+                <td>{{ league.members.split(',')|length }}</td>
+                <td>{{ league.league_type|capitalize }}</td>
+                <td>{{ league.created_at.split(' ')[0] }}</td>
+                <td>{{ league.creator }}</td>
+                <td>
+                  {% if league.id|string not in user_leagues %}
+                    <form action="{{ url_for('main.join_public_league', league_id=league.id) }}" method="POST">
+                      <button type="submit" class="btn-join">JOIN</button>
+                    </form>
+                  {% else %}
+                    <button disabled class="btn-disabled">Joined</button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="no-leagues">No public leagues available.</p>
+      {% endif %}
+    </div>
   </main>
-</div>
+  </div>
 </div>
 {% endblock %}

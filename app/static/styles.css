@@ -1352,25 +1352,12 @@ body {
 }
 
 /* join league.html css*/ 
-.join-league{
+
+.league-container {
+    flex-grow: 1;
+    min-height: 90vh;
     display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.league-container{
-    max-width: 600px;
-    width: 100%;
-    background: white;
-    border: 8px;
-    padding: 20px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-
-
+    flex-direction: column;
 }
 
 .join-form{
@@ -1392,7 +1379,7 @@ body {
 }
 
 .join-form input{
-    width: 95%;
+    width: 300px;
     padding: 10px;
     border: 1px solid;
     border-radius: 5px;
@@ -1415,144 +1402,77 @@ body {
     background: #0056b3;
 
 }
-
-.public-leagues{
-    text-align: center;
-    background: linear-gradient(135deg, #ffffff, #f5f5f5);
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
-    border: 4px solid;
-
-}
-
 .public-leagues h1{
     font-size: 24px;
     margin-bottom: 10px;
 }
 
-.league-list{
-    list-style: none;
-    padding: 0px;
-    margin-top: 15px;
-}
-
-.league-item{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-    padding: 12px;
-    margin: 8px 0px;
-    border-radius: 5px;
-    border: 1px solid;
-}
-
-.league-link{
-    text-decoration: none;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.league-link:hover{
-    color: #007bff;
-}
-
-.btn-join , .private-join{
-    background: #28a745;
-    color: white;
-    padding: 6px 12px;
-    border: 2px solid transparent;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: 0.3s ease;
-    font-size: 14px;
-
-}
-
-.btn-join:hover,.private-join:hover{
-    background: #218838;
-}
-
-.btn-disabled{
-    margin-left: 20px;
-    background: #ccc;
-    color: #555;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 5px;
-    cursor: not-allowed;
-    font-size: 14px;
-}
-
-.no-leagues{
-    font-size: 16px;
-    color: #666;
-    margin-top: 15px;
-}
-
-.my-leagues{
-     display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 80vh;
-    padding: 20px;
-}
-
-.leagues-content {
-    max-width: 600px;
+.league-table {
     width: 100%;
+    border-collapse: collapse;
+}
+
+.league-table th, .league-table td {
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.league-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd; 
+}
+
+.league-table tr {
+    border-bottom: 1px solid #ddd; 
+}
+
+.league-table tr:last-child {
+    border-bottom: none;
+}
+.league-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
     background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: 0.3s ease-in-out;
-}
-
-.leagues-content h1{
-    font-size: 26px;
-    margin-bottom: 20px;
-    color: #333;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-
-}
-
-.league-list{
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-}
-
-.league-item{
-    background: white;
-    padding: 12px;
-    margin-bottom: 10px;
     border-radius: 8px;
-    border: 1px solid;
-    transition: 0.3s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.league-link{
+.league-table th, .league-table td {
+    padding: 12px;
+    text-align: left;
+}
+
+.league-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.league-table tr {
+    border-bottom: 1px solid #ddd;
+}
+
+.league-table tr:last-child {
+    border-bottom: none;
+}
+
+.league-link {
     text-decoration: none;
     font-weight: bold;
-    font-size: 18px;
     color: #007bff;
     transition: color 0.3s ease;
-
 }
 
-.league-link:hover{
+.league-link:hover {
     color: #0056b3;
     text-decoration: underline;
 }
 
-.no-leagues{
+.no-leagues {
     font-size: 16px;
     color: black;
     margin-top: 15px;
@@ -1561,11 +1481,6 @@ body {
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
-}
-.section-title{
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /* fixtures page css*/
