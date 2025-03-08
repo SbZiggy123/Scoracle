@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<div class="premier-league">
+<div class="league-view">
 <div class="grid-container">
     <main>
-        <h1>Premier League Table</h1>
+        <h1>{{ league_name }} Table</h1>
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -19,10 +19,6 @@
                         <th>GA</th>
                         <th>GD</th>
                         <th>Pts</th>
-                        <!-- if you want xg and xga
-                        <th>xG</th>
-                        <th>xGA</th>
-                    -->
                     </tr>
                 </thead>
                 <tbody>
@@ -31,7 +27,7 @@
                         <td>{{ loop.index }}</td>
                         <td>
                           <img src="" class="team-crest" data-team="{{ row[0] }}">
-                          <a href="{{ url_for('main.fixtures', team_name=row[0]) }}" class="team-link">
+                          <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=row[0]) }}" class="team-link">
                               {{ row[0] }}
                           </a>
                         </td>
@@ -43,32 +39,27 @@
                         <td>{{ row[6] }}</td>
                         <td>{{ row[5]|int - row[6]|int }}</td>
                         <td>{{ row[7] }}</td>
-                        <!-- if you want xg and xga
-                        <td>{{ "%.2f"|format(row[8]|float) }}</td>
-                        <td>{{ "%.2f"|format(row[9]|float) }}</td>
-                    -->
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- probably need more divs and stuff for the css-->
         <h2 class="section-title">Recent Results</h2>
         <div class="fixtures-container">
             {% for result in recent_results %}
-            <a href="{{ url_for('main.single_result', match_id=result.id) }}" class="match-time-link">
+            <a href="{{ url_for('main.single_result', league_code=league_code, match_id=result.id) }}" class="match-time-link">
               <div class="match-date">
                 {{ result.datetime.split(' ')[0] }}
               </div>
             </a>
                 <div class="match-teams">
-                  <a href="{{ url_for('main.fixtures', team_name=result.h.title) }}" class="team-link">
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=result.h.title) }}" class="team-link">
                     <img src="" class="team-crest" data-team="{{ result.h.title }}">
                     <span class="team-name">{{ result.h.title }}</span>
                   </a>
                     <span class="score">{{ result.goals.h }} - {{ result.goals.a }}</span>
-                  <a href="{{ url_for('main.fixtures', team_name=result.a.title) }}" class="team-link">
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=result.a.title) }}" class="team-link">
                     <span class="team-name">{{ result.a.title }}</span>
                     <img src="" class="team-crest" data-team="{{ result.a.title }}">
                   </a>
@@ -76,23 +67,22 @@
             {% endfor %}
         </div>
 
-
         <h2 class="section-title">Upcoming Fixtures</h2>
         <div class="fixtures-container">
             {% for fixture in upcoming_fixtures %}
-            <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
+            <a href="{{ url_for('main.prediction', league_code=league_code, match_id=fixture.id) }}" class="match-time-link">
               <div class="match-date">
                 {{ fixture.datetime.split(' ')[0] }}
                 <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
               </div>
             </a>
                 <div class="match-teams">
-                  <a href="{{ url_for('main.fixtures', team_name=fixture.h.title)}}" class="team-link">
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=fixture.h.title)}}" class="team-link">
                     <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
                       <span class="team-name">{{ fixture.h.title }}</span>
                   </a>
                     <span class="score">vs</span>
-                  <a href="{{url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
+                  <a href="{{url_for('main.fixtures', league_code=league_code, team_name=fixture.a.title) }}" class="team-link">
                     <span class="team-name">{{ fixture.a.title }}</span>
                     <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
                   </a>

@@ -6,13 +6,13 @@ class PlayerPredictionSystem:
         self.base_points = 100  # Works similar to PredictionSystem
     
     # No way to get definite players that will play so predict
-    async def get_likely_match_players(self, match_id, season):
+    async def get_likely_match_players(self, match_id, league_code, season):
         """Get likely players for an upcoming match based on recent games"""
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
             
             # Get match details
-            fixtures = await understat.get_league_fixtures("epl", season)
+            fixtures = await understat.get_league_fixtures(league_code, season)
             match = next((fixture for fixture in fixtures if fixture["id"] == match_id), None)
             
             if not match:

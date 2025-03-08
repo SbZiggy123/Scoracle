@@ -4,10 +4,13 @@
 <div class="singleResult">
 <div class="grid-container">
     <main>
+        <div class="league-info">
+            <h3>{{ league_name }}</h3>
+        </div>
         <div class="teams-container">
             <div class="team-home-team">
                 <img src="" alt="Home-crest" class="team-crest" data-team="{{ match.h.title }}">
-                <h2><a href="{{ url_for('main.fixtures', team_name=match.h.title) }}" class="team-link"> {{ match.h.title }} </a></h2>
+                <h2><a href="{{ url_for('main.fixtures', league_code=league_code, team_name=match.h.title) }}" class="team-link"> {{ match.h.title }} </a></h2>
             </div>
             <div class="match-info">
             <div class="match-time">
@@ -20,7 +23,7 @@
 
             <div class="team-away-team">
                 <img src="" alt="Away-crest" class="team-crest" data-team="{{ match.a.title }}">
-                <h2><a href="{{ url_for('main.fixtures', team_name=match.a.title) }}" class="team-link"> {{ match.a.title }} </a></h2>
+                <h2><a href="{{ url_for('main.fixtures', league_code=league_code, team_name=match.a.title) }}" class="team-link"> {{ match.a.title }} </a></h2>
             </div>
         </div>
 
@@ -28,8 +31,6 @@
             <span class="final-score">{{ match.goals.h }} - {{ match.goals.a }}</span>
         </div>
             
-        
-
         <div class="match-stats">
             <h3>Match Statistics</h3>
             <table class="stats-table">
@@ -124,10 +125,6 @@
                     </tbody>
                 </table>
             </div>
-
-
-
-            <!-- Create some sort of graphic or map? -->
         </div>
     </main>
     <footer>Footer</footer>

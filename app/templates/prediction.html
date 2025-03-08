@@ -55,7 +55,7 @@
                 <h3>Your Prediction</h3>
                 
                 {% if session.username %}
-                    <form id="prediction-form" method="POST" action="{{ url_for('main.prediction', match_id=match.id) }}">
+                    <form id="prediction-form" method="POST" action="{{ url_for('main.prediction', league_code=league_code, match_id=match.id) }}">
                         {{ form.hidden_tag() }}
                         
                         <div class="score-inputs">
@@ -106,7 +106,7 @@
                 <h3>Match Analysis</h3>
                 <div class="analysis-section">
                     <div class="team-analysis">
-                        <h4>{{ match.h.title }} Recent Form</h4>
+                        <h4>{{ match.h.title }} Recent Form in {{ league_name }}</h4>
                         <div class="chart-container">
                             <canvas id="homeTeamChart" width="400" height="200"></canvas>
                         </div>
@@ -129,7 +129,7 @@
                     </div>
                     
                     <div class="team-analysis">
-                        <h4>{{ match.a.title }} Recent Form</h4>
+                        <h4>{{ match.a.title }} Recent Form in {{ league_name }}</h4>
                         <div class="chart-container">
                             <canvas id="awayTeamChart" width="400" height="200"></canvas>
                         </div>
@@ -192,8 +192,8 @@
                                     <th>Games</th>
                                     <th>Goals</th>
                                     <th>Shots</th>
-                                    <th>Mins/Game</th>
-                                    <th>Expected (Goals/Shots/Mins)</th>
+                                    <th>Mins</th>
+                                    <th>Expected outcomes</th>
                                     <th>Your Prediction</th>
                                 </tr>
                             </thead>

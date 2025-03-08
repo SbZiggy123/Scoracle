@@ -15,6 +15,24 @@ import json
 main = Blueprint('main', __name__)
 app = Flask(__name__)
 
+LEAGUE_MAPPING = {
+    "epl": "Premier League",
+    "La_liga": "La Liga",
+    "Bundesliga": "Bundesliga", 
+    "Serie_A": "Serie A",
+    "Ligue_1": "Ligue 1"
+}
+
+LEAGUE_ICONS = {
+    "epl": "PremLogo.png",
+    "La_liga": "LaLigaLogo.png",
+    "Bundesliga": "BundesligaLogo.png",
+    "Serie_A": "SerieALogo.png", 
+    "Ligue_1": "Ligue1Logo.png"
+}
+
+DEFAULT_LEAGUE = "epl"
+
 UPLOAD_FOLDER = 'static/profilepics/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -30,24 +48,37 @@ def initialise_database():
 def mainpage():
     return render_template("base.html")
 
-@main.route('/PremierLeague')
-async def premier_league():
+
+@main.route('/league/<league_code>')
+@main.route('/league')  # Deafault to prem
+async def league_view(league_code=DEFAULT_LEAGUE):
+    # Just to make sure it's in mapping above
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
+    league_name = LEAGUE_MAPPING[league_code]
+    
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
-        # Gets league table without headers cos I put them in already in html.
-        table = await understat.get_league_table("epl", 2024, with_headers=False)
+        table = await understat.get_league_table(league_code, 2024, with_headers=False)
         
-        results = await understat.get_league_results("epl", 2024)
+        results = await understat.get_league_results(league_code, 2024)
         recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
-            
-        fixtures = await understat.get_league_fixtures("epl", 2024)
-        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
-        # lambda gets datetime... in docs
         
-        return render_template("PremierLeague.html", 
-                               table=table,
-                               recent_results=recent_results,
-                               upcoming_fixtures=upcoming_fixtures)
+        fixtures = await understat.get_league_fixtures(league_code, 2024)
+        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+    
+        return render_template("PremierLeague.html",  # change it if you want. dont bother
+                        league_name=league_name,
+                        league_code=league_code,
+                        table=table,
+                        recent_results=recent_results,
+                        upcoming_fixtures=upcoming_fixtures)
+# if anything leaking around:
+@main.route('/PremierLeague')
+def premier_league_redirect():
+    return redirect(url_for('main.league_view', league_code="epl"))
+
+
 
 
 @main.route('/createLeague', methods=["GET", "POST"])
@@ -220,9 +251,16 @@ def my_leagues():
 
 
 
-@main.route('/fixtures')
-@main.route("/fixtures/<team_name>")
-async def fixtures(team_name=None):
+@main.route('/fixtures/<league_code>/<team_name>')
+@main.route('/fixtures/<league_code>')
+@main.route('/fixtures')  # Default route kinda fkced cos does nil
+async def fixtures(league_code=DEFAULT_LEAGUE, team_name=None):
+    # Validate league_code
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
+    
+    league_name = LEAGUE_MAPPING[league_code]
+    
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         
@@ -234,11 +272,15 @@ async def fixtures(team_name=None):
             upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
             return render_template(
                 "fixtures.html",
+                league_code=league_code,
+                league_name=league_name,
                 team_name=team_name,
                 recent_results=recent_results,
                 upcoming_fixtures=upcoming_fixtures
             )
-        return render_template("fixtures.html")
+        return render_template("fixtures.html", 
+                              league_code=league_code, 
+                              league_name=league_name)
 
 class PredictionForm(FlaskForm):
     home_score = IntegerField('Home Score', validators=[
@@ -253,11 +295,15 @@ class PredictionForm(FlaskForm):
 
 from .prediction_model import PredictionSystem
 
+@main.route('/prediction/<league_code>/<match_id>', methods=['GET', 'POST'])
 @main.route('/prediction/<match_id>', methods=['GET', 'POST'])
-async def prediction(match_id):
+async def prediction(match_id, league_code=DEFAULT_LEAGUE):
     # Debug the match_id parameter
     print(f"DEBUG: match_id type: {type(match_id)}, value: {match_id}")
     
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
+        
     form = PredictionForm()
     # Create a prediction system instance
     prediction_system = PredictionSystem()
@@ -265,7 +311,7 @@ async def prediction(match_id):
     
     try:
         # Get player prediction data
-        player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+        player_data = await player_prediction_system.get_likely_match_players(match_id, league_code, 2024)
         
         # Process player data for template
         home_players = []
@@ -300,7 +346,7 @@ async def prediction(match_id):
         user_player_predictions = {}
     
     try:
-        prediction_data = await prediction_system.predict_match(match_id, 2024)
+        prediction_data = await prediction_system.predict_match(match_id, league_code, 2024)
         print(f"DEBUG: Got prediction data: {bool(prediction_data)}")
         for key in ["home_xg", "away_xg", "home_goals", "away_goals", 
                    "home_opponents", "away_opponents", "home_dates", 
@@ -312,11 +358,11 @@ async def prediction(match_id):
         print(f"ERROR getting prediction data: {e}")
         print(traceback.format_exc())
         flash("Error retrieving match data", "error")
-        return redirect(url_for("main.fixtures"))
+        return redirect(url_for("main.fixtures", league_code=league_code))
     
     if not prediction_data:
         flash("Match not found", "error")
-        return redirect(url_for("main.fixtures"))
+        return redirect(url_for("main.fixtures", league_code=league_code))
         
     user_prediction = None
     
@@ -410,6 +456,8 @@ async def prediction(match_id):
             
     return render_template(
         "prediction.html",
+        league_code=league_code,
+        league_name=LEAGUE_MAPPING[league_code],
         form=form,
         match=prediction_data['match'],
         home_xg=prediction_data['home_xg'],
@@ -428,7 +476,7 @@ async def prediction(match_id):
         away_xg_performance=prediction_data['away_xg_performance'],
         home_expected=prediction_data['home_expected'],
         away_expected=prediction_data['away_expected'],
-        league_positions=await prediction_system.get_league_positions(2024),
+        league_positions=await prediction_system.get_league_positions(league_code, 2024),
         home_weight=prediction_system.home_weight, # for now
         user_prediction=user_prediction,
         home_players=home_players,
@@ -437,13 +485,16 @@ async def prediction(match_id):
     )
     
 #need endpoints
+@main.route('/api/player-predictions/<league_code>/<match_id>', methods=['GET'])
 @main.route('/api/player-predictions/<match_id>', methods=['GET'])
-async def get_player_predictions(match_id):
+async def get_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
     """Get likely players for a match and their stats"""
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
     player_prediction_system = PlayerPredictionSystem()
     
     try:
-        player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+        player_data = await player_prediction_system.get_likely_match_players(match_id, league_code, 2024)
         
         if not player_data:
             return jsonify({"error": "Match not found"})
@@ -469,8 +520,12 @@ async def get_player_predictions(match_id):
         print(traceback.format_exc())
         return jsonify({"error": str(e)})
 
+@main.route('/api/player-predictions/<league_code>/<match_id>', methods=['POST'])
 @main.route('/api/player-predictions/<match_id>', methods=['POST'])
-async def save_player_predictions(match_id):
+async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
+
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
     """Save a user's player predictions"""
     if "username" not in session:
         return jsonify({"error": "You must be logged in to make predictions"})
@@ -487,7 +542,7 @@ async def save_player_predictions(match_id):
     player_prediction_system = PlayerPredictionSystem()
     
     # Get player data to calculate multipliers
-    player_data = await player_prediction_system.get_likely_match_players(match_id, 2024)
+    player_data = await player_prediction_system.get_likely_match_players(match_id, league_code, 2024)
     
     # Create a map of player IDs to their data as a dict
     player_dict = {}
@@ -567,20 +622,22 @@ async def yourBets():
     return render_template("yourBets.html", predictions=predictions, match_details=match_details)
 # Stats of users predictions in bottom of page
         
-@main.route("/result/<match_id>") #named differently to the html page it's using btw
-async def single_result(match_id):
+@main.route("/result/<league_code>/<match_id>")
+@main.route("/result/<match_id>") 
+async def single_result(match_id, league_code=DEFAULT_LEAGUE):
+    if league_code not in LEAGUE_MAPPING:
+        league_code = DEFAULT_LEAGUE
+    
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         
-        results = await understat.get_league_results("epl", 2024)
+        results = await understat.get_league_results(league_code, 2024)
         match = next((result for result in results if result["id"] == match_id), None)
         
         if match:
             match_players = await understat.get_match_players(match_id)
             match_shots = await understat.get_match_shots(match_id)
 
-            # for table popup gonna do
-            
             home_stats = {
                 "shots": len(match_shots["h"]),
                 "shots_on_target": len([shot for shot in match_shots["h"]
@@ -601,6 +658,8 @@ async def single_result(match_id):
                 
             return render_template(
                 "singleResult.html",
+                league_code=league_code,
+                league_name=LEAGUE_MAPPING[league_code],
                 match=match,
                 home_stats=home_stats,
                 away_stats=away_stats,
@@ -608,7 +667,7 @@ async def single_result(match_id):
             )
         else:
             flash("Match not found", "error")
-            return redirect(url_for("main.fixtures")) # should this be premleague... maybe 
+            return redirect(url_for("main.fixtures", league_code=league_code))
         
 
 # might not need this cos we have singleResult (takes match ID as param) 
