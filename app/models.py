@@ -62,8 +62,6 @@ def init_db():
                     points_earned INTEGER DEFAULT NULL,
                     exact_score BOOLEAN DEFAULT FALSE,
                     correct_result BOOLEAN DEFAULT FALSE,
-                    bet_amount INTEGER NOT NULL,
-                    outcome_prediction TEXT CHECK(outcome_prediction IN ('home', 'away', 'draw')) DEFAULT NULL,
                     FOREIGN KEY (user_id) REFERENCES users (id),
                     UNIQUE (user_id, match_id)
                 )
