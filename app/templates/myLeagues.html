@@ -1,24 +1,40 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<div class="grid-container">
-    <main>
-        <h1>My Leagues</h1>
-        
-        {% if leagues %}
-            <ul>
-                {% for league in leagues %}
-                    <li>
-                        <a href="{{ url_for('main.league', league_id=league.id) }}">
-                            {{ league.name }}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>You are not in any leagues yet.</p>
-        {% endif %}
-    </main>
+<div class="join-league">
+    <div class="grid-container">
+        <main class="leagues-container">
+            <h1>My Leagues</h1>
 
+            {% if leagues %}
+            <div class="public-leagues">
+                <table class="league-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>created</th>
+                            <th>members</th>
+                            <th>Creator</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for league in leagues %}
+                            <tr onclick="window.location.href='{{ url_for('main.league', league_id=league.id) }}'">
+                                <td>{{ league.name }}</td>
+                                <td>{{ league.league_type|capitalize }}</td>
+                                <td>{{ league.created_at.split(' ')[0] }}</td>
+                                <td>{{ league.members.split(',')|length }}</td>
+                                <td>{{ league.creator }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            <div class="public-leagues">
+            {% else %}
+                <p class="no-leagues">You are not in any leagues yet.</p>
+            {% endif %}
+        </main>
+    </div>
 </div>
 {% endblock %}

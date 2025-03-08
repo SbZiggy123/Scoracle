@@ -27,7 +27,7 @@ class PredictionSystem:
         adjusted_xg = weighted_xg * xg_performance
         return round(adjusted_xg, 2)
 
-    async def get_team_recent_data(self, team_name, season):
+    async def get_team_recent_data(self, team_name, league_code, season):
         """Get recent match data for a team with opposition information"""
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
@@ -94,10 +94,10 @@ class PredictionSystem:
                 "xg_performance": round(xg_performance, 2)  # Include the performance ratio
             }
     
-    async def get_league_positions(self, season):
+    async def get_league_positions(self, league_code, season):
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
-            table = await understat.get_league_table("epl", season, with_headers=False)
+            table = await understat.get_league_table(league_code, season, with_headers=False)
             
             positions = {}
             for position, team_data in enumerate(table):
@@ -147,13 +147,13 @@ class PredictionSystem:
             return max(0.7, min(1.3, ratio))
     """
     # Moving route stuff to here
-    async def predict_match(self, match_id, season):
+    async def predict_match(self, match_id, league_code, season):
         """Generate match prediction with all factors"""
         async with aiohttp.ClientSession() as session:
             understat = Understat(session)
             
             # Get match details
-            fixtures = await understat.get_league_fixtures("epl", season)
+            fixtures = await understat.get_league_fixtures(league_code, season)
             match = next((fixture for fixture in fixtures if fixture["id"] == match_id), None)
             
             if not match:
@@ -162,11 +162,11 @@ class PredictionSystem:
             home_team = match["h"]["title"]
             away_team = match["a"]["title"]
             
-            league_positions = await self.get_league_positions(season)
+            league_positions = await self.get_league_positions(league_code, season)
             
             # New dict with everything reduce calls
-            home_data = await self.get_team_recent_data(home_team, season)
-            away_data = await self.get_team_recent_data(away_team, season)
+            home_data = await self.get_team_recent_data(home_team, league_code, season)
+            away_data = await self.get_team_recent_data(away_team, league_code, season)
             
             # Extract xG performance ratios
             home_xg_performance = home_data["xg_performance"]

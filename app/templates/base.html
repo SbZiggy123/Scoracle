@@ -34,10 +34,17 @@
                 </div>
             </li>
             <li class="dropdown">
-                <a href="{{ url_for('main.premier_league') }}" class="dropdown-trigger">
-                    <img src="{{ url_for('static', filename='PremLogo.png') }}" alt="Premier League Logo" class="nav-logo">
-                    Premier League</a>
-
+                <a href="#" class="dropdown-trigger">
+                    <img src="{{ url_for('static', filename='PremLogo.png') }}" alt="Leagues Logo" class="nav-logo">
+                    Leagues
+                </a>
+                <div class="Content">
+                    <a href="{{ url_for('main.league_view', league_code='epl') }}">Premier League</a>
+                    <a href="{{ url_for('main.league_view', league_code='La_liga') }}">La Liga</a>
+                    <a href="{{ url_for('main.league_view', league_code='Bundesliga') }}">Bundesliga</a>
+                    <a href="{{ url_for('main.league_view', league_code='Serie_A') }}">Serie A</a>
+                    <a href="{{ url_for('main.league_view', league_code='Ligue_1') }}">Ligue 1</a>
+                </div>
             </li>
             {% if session.username %}
                 <li class="dropdown">
@@ -59,9 +66,6 @@
             </li>
             {% endif %}
         </ul>
-
-        
-
         {% block main_content %}
         {% endblock %}
     </body>

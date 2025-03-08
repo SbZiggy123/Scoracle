@@ -1,81 +1,99 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<div class="grid-container">
-  <main>
-    <h1>{{ league.league_name }}</h1>
-    <p>Type: {{ league.league_type }}</p>
-    <p>Privacy: {{ league.privacy }}</p>
-    {% if league.privacy == "Private" and league.league_code %}
-      <p>League Code: {{ league.league_code }}</p>
-    {% endif %}
-    <p>Created: {{ league.created_at }}</p>
+<div class="fantasy-league">
+  <div class="grid-container">
+    <main class="league-content">
 
-    <h2>Members</h2>
-    {% if league.member_list %}
-      <ul>
-        {% for member in league.member_list %}
-          <li>{{ member }}</li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No members yet.</p>
-    {% endif %}
-    <h2 class="leaderboard-title">Leaderboard</h2>
-    <div class="leaderboard-container">
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboardTableBody">
-          {% for player in league.leaderboard %}
+      <div class="league-header">
+        <div class="league-details">
+          <h1>{{ league.league_name }}</h1>
+          <p>{{ league.league_type|capitalize }}</p>
+          <p>{{ league.privacy }}</p>
+          {% if league.privacy == "Private" and league.league_code %}
+            <p><strong>Code:</strong> <span class="league-code">{{ league.league_code }}</span></p>
+          {% endif %}
+          <p>{{ league.created_at[:10] }}</p>
+        </div>
+
+        <div class="members-container">
+          <h2>Members</h2>
+          {% if league.member_list %}
+            <ul class="member-list">
+              {% for member in league.member_list %}
+                <li>{{ member }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="no-members">No members yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <h2 class="leaderboard-title">Leaderboard</h2>
+      <div class="leaderboard-container">
+        <table class="leaderboard-table">
+          <thead>
             <tr>
-              <td>{{ loop.index }}</td>
-              <td>{{ player.username }}</td>
-              <td>{{ player.score }}</td>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Score</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="fixtures-container">
+          </thead>
+          <tbody id="leaderboard">
+            {% for player in league.leaderboard %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ player.username }}</td>
+                <td>{{ player.score }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <h2 class="leaderboard-title">Upcoming fixtures</h2>
+      </div>
       {% for fixture in upcoming_fixtures %}
       <div class="match-item">
-          <div class="match-date">
-              {{ fixture.datetime.split(' ')[0] }}
-              <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
-          </div>
-          <div class="match-details">
-            <form action="javascript:void(0);" class="bet-form">
-              <button type="button" class="bet-button" onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'home', this)">
-                Bet
-              </button>
-            </form>
-              <div class="match-teams">
-                  <a href="{{ url_for('main.fixtures', team_name=fixture.h.title)}}" class="team-link">
-                      <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
-                      <span class="team-name">{{ fixture.h.title }}</span>
-                  </a>
-                  <span class="score">vs</span>
-                  <a href="{{ url_for('main.fixtures', team_name=fixture.a.title) }}" class="team-link">
-                      <span class="team-name">{{ fixture.a.title }}</span>
-                      <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
-                  </a>
-              </div>
-              <form action="javascript:void(0);" class="bet-form">
-                <button type="button" class="bet-button" onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'away', this)">
-                  Bet
-                </button>
-              </form>
-          </div>
+
+        <form action="javascript:void(0);" class="bet-form">
+          <button type="button" class="bet-button"
+              onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'home', this)">
+              Quick Bet
+          </button>
+        </form>
+
+        <img src="" alt="Home Crest"
+          class="team-crest"
+          data-team="{{ fixture.h.title }}">
+
+        <span class="team-name">{{ fixture.h.title }}</span>
+
+        <div class="match-time-vs">
+          <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
+            <span class="match-time">
+              {{ fixture.datetime.split(' ')[1][:5] }}
+            </span>
+          </a>
+          <span class="match-vs">VS</span>
+        </div>
+
+        <span class="team-name">{{ fixture.a.title }}</span>
+
+        <img src="" alt="Away Crest"
+           class="team-crest"
+          data-team="{{ fixture.a.title }}">
+
+        <form action="javascript:void(0);" class="bet-form">
+          <button type="button" class="bet-button"
+              onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'away', this)">
+              Quick Bet
+          </button>
+        </form>
       </div>
       {% endfor %}
-    </div>
-  </main>
+    </div>  
+    </main>
+  </div>
 </div>
 
 <script>
