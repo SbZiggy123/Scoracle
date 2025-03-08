@@ -747,158 +747,177 @@ body {
 }
 
 /*LEAGUE LEADERBOARD*/
-.leaderboard-container {
-    width: 80%; /* Reduce width for better spacing */
-    margin: 20px auto; /* Center it and add space around */
-    text-align: center;
+.fantasy-league {
+    flex-grow: 1;
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.leaderboard-title {
-    font-size: 22px;
-    margin-bottom: 10px;
+.league-content {
+    max-width: 900px;
+    width: 100%;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: 0.3s ease-in-out;
+}
+
+/* League Header */
+.league-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+  }
+  
+  .league-details {
+    flex: 1;
+    margin-right: 20px;
+    align-items: left;
+  }
+  
+  .league-details h1 {
+    font-size: 28px;
     color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .members-container {
+    width: 250px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .members-container h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  .member-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .member-list li {
+    background: #fff;
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 5px;
+    font-size: 16px;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+  
+  .no-members {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+  }
+
+/* Leaderboard */
+.leaderboard-container {
+    margin-top: 20px;
 }
 
 .leaderboard-table {
     width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
     border-collapse: collapse;
-    background-color: #F0F8FF;
+    background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .leaderboard-table th, .leaderboard-table td {
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-    height: 40px;
+    padding: 12px;
+    text-align: left;
 }
 
 .leaderboard-table th {
-    background-color: #6c5969;
-    color: white;
+    background: #f8f9fa;
     font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14px;
 }
 
-.leaderboard-table td {
-    font-size: 14px;
+.leaderboard-table tr {
+    border-bottom: 1px solid #ddd;
+}
+
+.leaderboard-table tr:last-child {
+    border-bottom: none;
+}
+
+/* Fixtures */
+.fixtures-container {
+    margin-top: 25px;
+  }
+  
+  .match-item {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    border: 1px solid #ddd;
+  }
+  
+  .team-crest {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+  
+  .team-name {
     font-weight: bold;
     color: #333;
-}
-
-.leaderboard-table tbody tr:nth-child(1) td {
-    background-color: gold;
-    color: black;
-}
-
-.leaderboard-table tbody tr:nth-child(2) td {
-    background-color: silver;
-    color: black;
-}
-
-.leaderboard-table tbody tr:nth-child(3) td {
-    background-color: #cd7f32;
-    color: black;
-}
-
-.leaderboard-table tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-    transform: scale(1.01);
-}
-
-/*LEAGUE PAGE FIXTURES*/
-
-.fixtures-container {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+  }
+  
+  .match-time-vs {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px; /* Adds spacing between matches */
-    width: 95%;
-    /* max-width: 700px; */
-    margin: 20px auto;
-    padding: 15px;
-
-}
-
-.match-item {
-    display: fixed;
-    flex-direction: column;  
-    align-items: center;
-    width: 100%;
-    max-width: 700px;  
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    margin-bottom: 15px;
-}
-
-.match-date {
-    font-size: 14px;
-    font-weight: bold;
-    color: #555;
-    background: #e0e0e0;
-    padding: 8px 12px;
-    border-radius: 20px;
-    display: inline-block;
-    margin-bottom: 10px;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-.match-date:hover {
-    background: #555;
-    color: #e0e0e0;
-}
-
-.match-details {
-    display: flex;
-    flex-direction: row;  /* Arrange Bet - Teams - Bet in a row */
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.bet-form {
-    flex: 1; /* Ensures bet buttons align */
-    display: flex;
     justify-content: center;
-}
-
-.bet-button {
+  }
+  
+  .match-time {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 3px;
+  }
+  
+  .match-vs {
     font-weight: bold;
-    padding: 10px 15px;
+    font-size: 16px;
+  }
+  
+  .bet-button {
+    background: #28a745;
+    color: white;
+    padding: 6px 12px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.bet-button:hover {
-    transform: scale(1.05);
-}
-
-.match-teams {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    text-align: center;
-    position: relative;
-}
-
-.team-crest {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    margin-bottom: 5px;
-}
+    transition: 0.3s ease;
+    font-size: 14px;
+  }
+  .bet-button:hover {
+    background: #218838;
+  }
 
 /*Prediction page css */
 .prediction-page{
@@ -1402,6 +1421,15 @@ body {
     background: #0056b3;
 
 }
+
+.league-table tr[onclick] {
+    cursor: pointer;
+  }
+
+.league-table tr[onclick]:hover{
+    background-color: #d1d1d1;
+  }
+
 .public-leagues h1{
     font-size: 24px;
     margin-bottom: 10px;
@@ -1409,7 +1437,9 @@ body {
 
 .league-table {
     width: 100%;
-    border-collapse: collapse;
+    border: 1px solid #ddd;
+    border-collapse: separate;
+    border-spacing: 0px 8px;
 }
 
 .league-table th, .league-table td {
@@ -1418,6 +1448,7 @@ body {
 }
 
 .league-table th {
+    margin-bottom: 20px;
     background-color: #f8f9fa;
     font-weight: bold;
     border-bottom: 2px solid #ddd; 
@@ -1432,8 +1463,6 @@ body {
 }
 .league-table {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
     background: white;
     border-radius: 8px;
     overflow: hidden;

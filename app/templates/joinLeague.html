@@ -4,7 +4,7 @@
 <div class="join-league">
   <div class="grid-container">
     <main class="league-container">
-      <!-- Join Private League Form -->
+      
       <div class="join-form">
         <h2>Join A Private League</h2>
         <form method="POST" action="{{ url_for('main.join_league') }}">
@@ -13,7 +13,6 @@
         </form>
       </div>
 
-    <!-- Public Leagues List -->
     <div class="public-leagues">
       <h1>Public Leagues</h1>
       {% if leagues %}
@@ -21,9 +20,9 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Players</th>
               <th>Type</th>
               <th>Created</th>
+              <th>Members</th>
               <th>Creator</th>
               <th> </th>
             </tr>
@@ -32,9 +31,9 @@
             {% for league in leagues %}
               <tr>
                 <td><a href="{{ url_for('main.league', league_id=league.id) }}">{{ league.name }}</a></td>
-                <td>{{ league.members.split(',')|length }}</td>
                 <td>{{ league.league_type|capitalize }}</td>
                 <td>{{ league.created_at.split(' ')[0] }}</td>
+                <td>{{ league.members.split(',')|length }}</td>
                 <td>{{ league.creator }}</td>
                 <td>
                   {% if league.id|string not in user_leagues %}
