@@ -11,17 +11,21 @@
                 <table class="league-table">
                     <thead>
                         <tr>
-                            <th>League Name</th>
-                            <th>League Type</th>
-                            <th>Members</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>created</th>
+                            <th>members</th>
+                            <th>Creator</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for league in leagues %}
-                            <tr>
-                                <td><a href="{{ url_for('main.league', league_id=league.id) }}" class="league-link">{{ league.name }}</a></td>
+                            <tr onclick="window.location.href='{{ url_for('main.league', league_id=league.id) }}'">
+                                <td>{{ league.name }}</td>
                                 <td>{{ league.league_type|capitalize }}</td>
-                                <td>{{ league.member_count }}</td>
+                                <td>{{ league.created_at.split(' ')[0] }}</td>
+                                <td>{{ league.members.split(',')|length }}</td>
+                                <td>{{ league.creator }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

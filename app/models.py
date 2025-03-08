@@ -460,7 +460,7 @@ def generate_league_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 def get_user_leagues(username):
-    """Fetch all leagues the user is a part of."""
+    """Fetch all leagues the user is a part of"""
     conn = get_db_connection()
     if conn is not None:
         try:
@@ -471,15 +471,34 @@ def get_user_leagues(username):
             if not result or not result[0]:
                 return []
 
-            league_ids = [int(x.strip()) for x in result[0].split(",") if x.strip() != ""]
+            league_ids = [int(x.strip()) for x in result[0].split(",") if x.strip()]
 
             if not league_ids:
                 return []
 
-            placeholders = ','.join(['?'] * len(league_ids))
-            query = f"SELECT id, league_name FROM fantasyLeagues WHERE id IN ({placeholders})"
+            placeholders = ",".join(["?"] * len(league_ids))
+
+            query = f"""
+                SELECT f.id, f.league_name, f.league_type, f.privacy, f.members, f.created_at, u.username as creator
+                FROM fantasyLeagues f
+                JOIN users u ON f.members LIKE u.username || '%'
+                WHERE f.id IN ({placeholders})
+            """
             c.execute(query, league_ids)
-            user_leagues = [{"id": row[0], "name": row[1]} for row in c.fetchall()]
+            rows = c.fetchall()
+
+            user_leagues = [
+                {
+                    "id": row[0],
+                    "name": row[1],
+                    "league_type": row[2],
+                    "privacy": row[3],
+                    "members": row[4],
+                    "created_at": row[5],
+                    "creator": row[6]
+                }
+                for row in rows
+            ]
 
             return user_leagues
         except Error as e:
