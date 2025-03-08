@@ -11,7 +11,6 @@
             {% else %}
               <img class="profile-pic" src="{{ url_for('static', filename='login.png') }}" alt="Profile picture">
             {% endif %}
-            <p>Profile Pic URL: {{ profile_pic }}</p>
             <p>Look for leagues <a href="{{ url_for('main.join_league') }}">here</a>!</p>
             <p>Create a league <a href="{{ url_for('main.create_league') }}">here</a>!</p>
         </div> 
@@ -20,24 +19,33 @@
 
         <div class="Update">
           <h1>Update</h1>
-          <form class="Update" method="POST" action="{{ url_for('main.update') }}" enctype="multipart/form-data">
-            <label>Username:</label>
-            <input type="text" name="username" id="new_username">
-            
-            <label>Favourite Team:</label>
-            <select name="favourite_team" id="favourite_team">
-              <option value="Default">Select a Team!</option>
-              {% for team in team_names %}
-                <option value="{{ team }}">{{ team }}</option>
+          <form class="Update" method="POST" enctype="multipart/form-data">
+            <p>
+              {{ form.hidden_tag() }}
+              {{ form.username.label }} 
+              {{ form.username() }}
+              {% for error in form.username.errors %}
+                  {{ error }}
               {% endfor %}
-            </select>
-
-            <label>Change Profile Picture:</label>
-            <input type="file" id="profile_pic" name="profile_pic" accept="image/jpeg, image/png, image/webp">
-            <button class="updateSubmit" type="submit">Update</button>
+            </p>
+            <br>
+            <p>
+              {{ form.favourite_team.label }}
+              {{ form.favourite_team() }}
+            </p>
+            <br>
+            <p>
+              {{ form.profile_pic.label }}
+              {{ form.profile_pic() }}
+              {% for error in form.profile_pic.errors %}
+                  {{ error }}
+              {% endfor %}
+            </p>
+            <br>
+            <p>
+              {{ form.update() }}
+            </p>
           </form>
-
-
         </div>
       </main>
       <footer>Footer</footer>

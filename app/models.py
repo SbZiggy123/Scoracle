@@ -30,7 +30,7 @@ def init_db():
                     password_hash TEXT NOT NULL,
                     leagues TEXT DEFAULT '',
                     favourite_team TEXT DEFAULT '',
-                    profile_pic TEXT DEFAULT 'login.png',
+                    profile_pic TEXT NOT NULL DEFAULT 'login.png',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
@@ -136,28 +136,21 @@ def get_user(username):
 def update_user(username, update_field, update_item):
     """Retrieve a user from the database and update user details based on dashboard form."""
     conn = get_db_connection()
-    #Catch any errors finding users.
     if conn is not None:
         try:
             c = conn.cursor()
-            c.execute('SELECT * FROM users WHERE username = ?', (username))
-            user = c.fetchone()
-            if user:
-                return dict(user)
-            return None
+            allowed_fields = {"username", "favourite_team", "profile_pic"} 
+            if update_field not in allowed_fields:
+                raise ValueError("Invalid field name!")
+            query = f"UPDATE users SET {update_field} = ? WHERE username = ?"
+            c.execute(query, (update_item, username))
+            conn.commit()
         except Error as e:
-            print(f"Error retrieving user: {e}")
+            print(f"Error updating user: {e}")
             return None
         finally:
-            allowed_fields = {"username", "favourite_team", "profile_pic"}  # List of allowed fields
-            if update_field not in allowed_fields:
-                raise ValueError("Invalid field name!")  # Prevent SQL injection
-
-            # Build the SQL query dynamically
-            query = f"UPDATE users SET {update_field} = ? WHERE username = ?"
-
-            c.execute(query, (update_item, username))            
-            conn.close()    
+            if conn:
+                conn.close()    
     return None
 
 
@@ -615,16 +608,18 @@ def get_user_bets(user_id, league_id):
     return []
 
 def get_profile_pic(user):
-    """Fetch a private league by its unique code."""
     conn = get_db_connection()
     if conn is not None:
         try:
             c = conn.cursor()
-            c.execute("SELECT profile_pic FROM users WHERE user = ?", (user,))
+            c.execute("SELECT profile_pic FROM users WHERE username = ?", (user,))
             profile_pic = c.fetchone()
+            if profile_pic:
+                profile_pic = profile_pic[0]
+                profile_pic = "/static/profilepics/" + profile_pic
         except Error as e:
             print(f"Error fetching profile picture: {e}")
-            return None
+            return False
         finally:
             conn.close()
     return profile_pic

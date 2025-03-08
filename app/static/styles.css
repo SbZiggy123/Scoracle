@@ -506,10 +506,11 @@ Could probably add more*/
 }
 
 .dash-head p{
+    background-color:gold;
     font-size: x-large;
-    padding: 10%;
+    font-weight: bold;
     margin: 10%;
-    border: 1px solid;
+    border: 2px solid;
     border-radius: 5px;
     text-align: left;
 }
@@ -521,8 +522,8 @@ Could probably add more*/
 
 .dash-head .profile-pic{
     position: right;
-    max-width: 70%;
-    padding: 20% 15% 20% 15%;
+    max-width: 80%;
+    padding: 10%;
 }
 
 .dash-head .logout{

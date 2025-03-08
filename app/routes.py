@@ -15,7 +15,7 @@ import json
 main = Blueprint('main', __name__)
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'static/profilepics/'
+UPLOAD_FOLDER = 'app/static/profilepics/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -549,58 +549,46 @@ def search():
 
     return f" searched for: {query}"
 
-@main.route("/home")
+@main.route("/home", methods=["GET", "POST"])
 async def home():
     if "username" not in session:
         return redirect(url_for("main.login"))
-    else:
-        async with aiohttp.ClientSession() as understat_session:
-            understat = Understat(understat_session)
-            user = session["username"]
-            profile_pic = get_profile_pic(user)
-            totalLeagues = len(get_user_leagues(user))
-            teams = await understat.get_teams("epl", 2024)
-            team_names = []
-            for team in teams:
-                team_name = team["title"]
-                team_names.append(team_name)
-    return render_template("home.html", leagues=totalLeagues, profile_pic=profile_pic, username=session["username"], team_names=team_names)
-
-@main.route("/update", methods=["GET", "POST"])
-def update():
-    form = UpdateForm
-    db = get_db_connection()
-    new_username = request.form.get('username')
-    favourite_team = request.form.get('favourite_team')
-    file = request.files.get('profile_pic')
     user = session["username"]
 
-    if user:
-        if new_username:
+    form = UpdateForm()
+    db = get_db_connection()
+    if request.method == "POST":
+        user = session["username"]
+        new_username = request.form.get('username')
+        favourite_team = request.form.get('favourite_team')
+        if user != new_username:
             update_user(user, 'username', new_username)
-        if favourite_team:
-            update_user(user, 'favourite_team', favourite_team)
-        if file:
-            filename = secure_filename(file.filename)
-            pic_name = str(uuid.uuid1()) + "_" + filename
-            saver = request.files['profile_pic']
-            file = pic_name
-            try:
-                db.session.commit()
-                saver.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                flash("User updated successfully!")
-                return render_template("home.html", form=form)
-            except:
-                flash("There was a problem!")
-                return render_template("home.html", form=form)
-        else:
-            db.session.commit()
-            flash("User updated successfully!")
-            return render_template("home.html", form=form)
-    return render_template("home.html", form=form)
+            session["username"] = new_username
+        update_user(user, 'favourite_team', favourite_team)
+
+        profile_pic = request.files.get('profile_pic')
+        if profile_pic:
+            pic_filename = secure_filename(profile_pic.filename)
+            pic_name = str(uuid.uuid1()) + "_" + pic_filename
+            profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name))
+            update_user(user, 'profile_pic', pic_name)
+
+        db.commit()
+        flash("User Updated Successfully!")
+        return redirect(url_for("main.home")) 
+
+    async with aiohttp.ClientSession() as understat_session:
+        understat = Understat(understat_session)
+        user = session["username"]
+        totalLeagues = len(get_user_leagues(user))
+        profile_pic = get_profile_pic(user)
+        teams = await understat.get_teams("epl", 2024)
+        form.favourite_team.choices = [(team['id'], team['title']) for team in teams]
+
+    return render_template("home.html", leagues=totalLeagues, form=form, profile_pic=profile_pic, username=user)
 
 class UpdateForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
-    favourite_team = SelectField('Favortie Team', validate_choice=False)
+    favourite_team = SelectField('Favortie Team', coerce=int, validate_choice=False)
     profile_pic = FileField('Change Profile Picture')
     update = SubmitField("Update")
