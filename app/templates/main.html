@@ -1,12 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-   <h1>hi</h1>
-</head>
+{% block main_content %}
+<div class="grid-container">
+    <main>
+    <h2 class="section-title">Recent Results</h2>
+        <div class="fixtures-container">
+            {% for result in recent_results %}
+            <a href="{{ url_for('main.single_result', league_code=league_code, match_id=result.id) }}" class="match-time-link">
+              <div class="match-date">
+                {{ result.datetime.split(' ')[0] }}
+              </div>
+            </a>
+                <div class="match-teams">
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=result.h.title) }}" class="team-link">
+                    <img src="" class="team-crest" data-team="{{ result.h.title }}">
+                    <span class="team-name">{{ result.h.title }}</span>
+                  </a>
+                    <span class="score">{{ result.goals.h }} - {{ result.goals.a }}</span>
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=result.a.title) }}" class="team-link">
+                    <span class="team-name">{{ result.a.title }}</span>
+                    <img src="" class="team-crest" data-team="{{ result.a.title }}">
+                  </a>
+                </div>
+            {% endfor %}
+        </div>
 
-<body>
-    <p>hello</p>
-</body>
+        <h2 class="section-title">Upcoming Fixtures</h2>
+        <div class="fixtures-container">
+            {% for fixture in upcoming_fixtures %}
+            <a href="{{ url_for('main.prediction', league_code=league_code, match_id=fixture.id) }}" class="match-time-link">
+              <div class="match-date">
+                {{ fixture.datetime.split(' ')[0] }}
+                <span class="match-time">{{ fixture.datetime.split(' ')[1][:5] }}</span>
+              </div>
+            </a>
+                <div class="match-teams">
+                  <a href="{{ url_for('main.fixtures', league_code=league_code, team_name=fixture.h.title)}}" class="team-link">
+                    <img src="" class="team-crest" data-team="{{ fixture.h.title }}">
+                      <span class="team-name">{{ fixture.h.title }}</span>
+                  </a>
+                    <span class="score">vs</span>
+                  <a href="{{url_for('main.fixtures', league_code=league_code, team_name=fixture.a.title) }}" class="team-link">
+                    <span class="team-name">{{ fixture.a.title }}</span>
+                    <img src="" class="team-crest" data-team="{{ fixture.a.title }}">
+                  </a>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
 
-</html>
+
+{% endblock %}

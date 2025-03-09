@@ -45,8 +45,22 @@ def initialise_database():
     
     
 @main.route('/')
-def mainpage():
-    return render_template("base.html")
+async def homepage():
+    for league_code in LEAGUE_MAPPING:
+        league_name = LEAGUE_MAPPING[league_code]
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            table = await understat.get_league_table(league_code, 2024, with_headers=False)
+            results = await understat.get_league_results(league_code, 2024)
+            recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
+            fixtures = await understat.get_league_fixtures(league_code, 2024)
+            upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+            return render_template("main.html",  # change it if you want. dont bother
+                            league_name=league_name,
+                            league_code=league_code,
+                            table=table,
+                            recent_results=recent_results,
+                            upcoming_fixtures=upcoming_fixtures)
 
 
 @main.route('/league/<league_code>')
