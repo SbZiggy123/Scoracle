@@ -148,6 +148,23 @@ a {
     text-decoration: none;
     color: black;
 }
+
+.intro p{
+    text-align: center;
+    font-size: large;
+    font-weight: bold;
+}
+
+.intro img{
+    max-width: 20%;
+    padding-left: 40%;
+}
+
+.intro h1{
+    text-align: center;
+}
+
+
 .register{
     width: 350px;
     padding: 20px;

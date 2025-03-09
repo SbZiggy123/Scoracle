@@ -3,6 +3,14 @@
 {% block main_content %}
 <div class="grid-container">
     <main>
+      <div class="intro">
+          <img src="{{ url_for('static', filename='scoracle.png') }}" alt="scoracle logo"/>
+          <h1>Scoracle</h1>
+          <p>Welcome to Scoracle! Register and start your own Fantasy Football League, combining analysis with competition through informed statistics!</p>
+          <br>
+          <p>Join a league, create your own or browse our insightful statistics!</p>
+          <br>
+      </div>
     <h2 class="section-title">Recent Results</h2>
         <div class="fixtures-container">
             {% for result in recent_results %}
