@@ -11,9 +11,11 @@
             <table class="bets-table">
                 <thead>
                     <tr>
+                        <th>League</th>
                         <th>Match</th>
                         <th>Date</th>
                         <th>Your Prediction</th>
+                        <th>Bet Amount</th>
                         <th>Multiplier</th>
                         <th>Potential Points</th>
                         <th>Status</th>
@@ -22,6 +24,13 @@
                 <tbody>
                     {% for prediction in predictions %}
                         <tr>
+                            <td class="league-name">
+                                {% if prediction.league_id in league_info %}
+                                    {{ league_info[prediction.league_id] }}
+                                {% else %}
+                                    Unknown League
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if prediction.match_id in match_details %}
                                     <div class="match-teams">
@@ -43,6 +52,7 @@
                                 {% endif %}
                             </td>
                             <td class="prediction-score">{{ prediction.home_score }} - {{ prediction.away_score }}</td>
+                            <td>{{ prediction.bet_amount }}</td>
                             <td>{{ prediction.multiplier }}x</td>
                             <td>
                                 <div>Exact: {{ prediction.potential_exact_points }}</div>
@@ -76,10 +86,12 @@
             <table class="player-bets-table">
                 <thead>
                     <tr>
+                        <th>League</th>
                         <th>Match</th>
                         <th>Date</th>
                         <th>Player</th>
                         <th>Prediction</th>
+                        <th>Bet Amount</th>
                         <th>Multiplier</th>
                         <th>Potential Points</th>
                         <th>Status</th>
@@ -88,6 +100,13 @@
                 <tbody>
                     {% for prediction in player_predictions %}
                         <tr>
+                            <td class="league-name">
+                                {% if prediction.league_id in league_info %}
+                                    {{ league_info[prediction.league_id] }}
+                                {% else %}
+                                    Unknown League
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if prediction.match_id in match_details %}
                                     <div class="match-teams">
@@ -120,6 +139,7 @@
                                 <div>Goals: {{ prediction.goals_prediction }}</div>
                                 <div>Shots: {{ prediction.shots_prediction }}</div>
                             </td>
+                            <td>{{ prediction.bet_amount }}</td>
                             <td>{{ prediction.multiplier }}x</td>
                             <td>{{ prediction.potential_points }}</td>
                             <td>
