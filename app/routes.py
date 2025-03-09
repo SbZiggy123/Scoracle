@@ -764,11 +764,22 @@ async def yourBets():
         return redirect(url_for("main.home"))
     
     predictions = get_user_predictions(user["id"])
-    player_predictions = get_user_player_predictions(user["id"])  # Get all player predictions
+    player_predictions = get_user_player_predictions(user["id"])
+    
+    # Fetch leagues information for reference
+    league_info = {}
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, league_name FROM fantasyLeagues")
+    leagues = c.fetchall()
+    conn.close()
+    
+    for league in leagues:
+        league_info[league[0]] = league[1]
     
     # Fetch match details for each prediction
     match_details = {}
-    player_details = {}  # To store player names
+    player_details = {}
     
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
@@ -804,7 +815,8 @@ async def yourBets():
                           predictions=predictions, 
                           player_predictions=player_predictions,
                           match_details=match_details,
-                          player_details=player_details)
+                          player_details=player_details,
+                          league_info=league_info)
 # Stats of users predictions in bottom of page
         
 @main.route("/result/<league_code>/<match_id>")
