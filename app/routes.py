@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -345,6 +345,13 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
         away_players = []
         user_player_predictions = {}
     
+    # Get user's leagues so they can decide what league they wanna predict in 
+    user_leagues = []
+    if "username" in session:
+        user = get_user(session["username"])
+        if user:
+            user_leagues = get_user_leagues(session["username"])
+    
     try:
         prediction_data = await prediction_system.predict_match(match_id, league_code, 2024)
         print(f"DEBUG: Got prediction data: {bool(prediction_data)}")
@@ -399,9 +406,51 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
             
             home_score = form.home_score.data
             away_score = form.away_score.data
+            league_id = request.form.get('league_id', '1')  # Default to global league if not specified
+            bet_amount = request.form.get('bet_amount', '50')  # Default bet amount
+            
+            try:
+                league_id = int(league_id)
+                bet_amount = int(bet_amount)
+            except ValueError:
+                flash("Invalid league or bet amount.", "danger")
+                return redirect(url_for("main.prediction", league_code=league_code, match_id=match_id))
+            
+            # Validate bet amount
+            if bet_amount < 10 or bet_amount > 500:
+                flash("Bet amount must be between 10 and 500.", "danger")
+                return redirect(url_for("main.prediction", league_code=league_code, match_id=match_id))
+            
+            # Check if user has enough points in the league
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = ?", (user["id"], league_id))
+            league_score = c.fetchone()
+            
+            if not league_score or league_score[0] < bet_amount:
+                flash(f"Insufficient points to place a bet of {bet_amount}.", "danger")
+                return redirect(url_for("main.prediction", league_code=league_code, match_id=match_id))
+                
+            # Deduct bet amount
+            new_score = league_score[0] - bet_amount
+            c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = ?", 
+                      (new_score, user["id"], league_id))
+            conn.commit()
+            
+            # Also deduct from global league if this is not the global league
+            # Bet ALWAYS deducted from global league
+            if league_id != 1:
+                c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = 1", (user["id"],))
+                global_score = c.fetchone()
+                if global_score and global_score[0] >= bet_amount:
+                    new_global_score = global_score[0] - bet_amount
+                    c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = 1", 
+                              (new_global_score, user["id"]))
+                    conn.commit()
             
             print(f"DEBUG: Prediction details - User ID: {user['id']}, Match ID: {match_id}")
             print(f"DEBUG: Home score: {home_score}, Away score: {away_score}")
+            print(f"DEBUG: League ID: {league_id}, Bet Amount: {bet_amount}")
             
             home_expected = prediction_data["home_expected"]
             away_expected = prediction_data["away_expected"]
@@ -417,43 +466,58 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
             # Convert match_id to string if it's not already
             match_id_str = str(match_id)
             
-            save_result = save_prediction(
-                user["id"], match_id_str, home_score, away_score, 
-                multiplier=points_data["multiplier"], 
-                potential_exact_points=points_data["exact_score"],
-                potential_result_points=points_data["correct_result"]
-            )
+            # Check if prediction already exists
+            c.execute("SELECT id FROM user_predictions WHERE user_id = ? AND match_id = ? AND league_id = ?", 
+                     (user["id"], match_id_str, league_id))
+            existing = c.fetchone()
             
-            print(f"DEBUG: Save prediction result: {save_result}")
-            
-            if save_result:
-                user_prediction = {"home_score": home_score, "away_score": away_score}
-                flash("Your prediction has been saved!", "success")
-                if 'view_all_bets' in request.form:
-                    return redirect(url_for("main.yourBets"))
+            if existing:
+                # Update existing prediction
+                c.execute('''
+                    UPDATE user_predictions 
+                    SET home_score = ?, away_score = ?, bet_amount = ?, 
+                        multiplier = ?, potential_exact_points = ?, potential_result_points = ?, 
+                        created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (home_score, away_score, bet_amount, 
+                      points_data["multiplier"], points_data["exact_score"], points_data["correct_result"], 
+                      existing[0]))
             else:
-                flash("Failed to save your prediction. Please try again.", "danger")
-                
+                # Insert new prediction
+                c.execute('''
+                    INSERT INTO user_predictions
+                    (user_id, match_id, home_score, away_score, bet_amount, 
+                     multiplier, potential_exact_points, potential_result_points, league_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (user["id"], match_id_str, home_score, away_score, bet_amount, 
+                      points_data["multiplier"], points_data["exact_score"], points_data["correct_result"], 
+                      league_id))
+            
+            conn.commit()
+            conn.close()
+            
+            # Also save to global league if this is not the global league
+            if league_id != 1:
+                save_to_global = save_prediction(
+                    user["id"], match_id_str, home_score, away_score, bet_amount, None,
+                    multiplier=points_data["multiplier"], 
+                    potential_exact_points=points_data["exact_score"],
+                    potential_result_points=points_data["correct_result"],
+                    league_id=1
+                )
+                if not save_to_global:
+                    print("WARNING: Failed to save prediction to global league")
+            
+            user_prediction = {"home_score": home_score, "away_score": away_score}
+            flash("Your prediction has been saved!", "success")
+            if 'view_all_bets' in request.form:
+                return redirect(url_for("main.yourBets"))
         except Exception as e:
             import traceback
             print(f"ERROR in prediction submission: {e}")
             print(traceback.format_exc())
             flash("An error occurred while saving your prediction", "danger")
         
-    
-    print("DEBUG DATA BEING PASSED TO TEMPLATE:")
-    for key in ["home_opponents", "away_opponents", "home_dates", "away_dates", "home_results"]:
-        print(f"{key}: {prediction_data.get(key, 'MISSING')}")
-        
-        # 0s are not saving for some reason
-    if "username" in session and request.method == "POST":
-        print(f"DEBUG: Raw form data: {request.form}")
-        print(f"DEBUG: home_score from form: {form.home_score.data}, type: {type(form.home_score.data)}")
-        print(f"DEBUG: away_score from form: {form.away_score.data}, type: {type(form.away_score.data)}")
-        print(f"DEBUG: Form validation: {form.validate_on_submit()}")
-        if not form.validate_on_submit():
-            print(f"DEBUG: Form validation errors: {form.errors}")
-            
     return render_template(
         "prediction.html",
         league_code=league_code,
@@ -477,11 +541,12 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
         home_expected=prediction_data['home_expected'],
         away_expected=prediction_data['away_expected'],
         league_positions=await prediction_system.get_league_positions(league_code, 2024),
-        home_weight=prediction_system.home_weight, # for now
+        home_weight=prediction_system.home_weight, 
         user_prediction=user_prediction,
         home_players=home_players,
         away_players=away_players,
-        user_player_predictions=user_player_predictions
+        user_player_predictions=user_player_predictions,
+        user_leagues=user_leagues
     )
     
 #need endpoints
@@ -522,7 +587,7 @@ async def get_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
 @main.route('/api/player-predictions/<league_code>/<match_id>', methods=['POST'])
 @main.route('/api/player-predictions/<match_id>', methods=['POST'])
 async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
-    """Save a user's player predictions"""
+    """Save a user's player predictions with league integration"""
     if league_code not in LEAGUE_MAPPING:
         league_code = DEFAULT_LEAGUE
     
@@ -539,6 +604,7 @@ async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
         return jsonify({"error": "Invalid prediction data"})
     
     player_prediction_system = PlayerPredictionSystem()
+    conn = get_db_connection()
     
     # Get player data to calculate multipliers
     player_data = await player_prediction_system.get_likely_match_players(match_id, league_code, 2024)
@@ -551,40 +617,137 @@ async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
     
     results = []
     
-    for prediction in data:
-        player_id = prediction.get("player_id")
-        goals = prediction.get("goals", 0)
-        shots = prediction.get("shots", 0)
+    try:
+        c = conn.cursor()
         
-        
-        if not player_id or player_id not in player_dict:
+        for prediction in data:
+            player_id = prediction.get("player_id")
+            goals = prediction.get("goals", 0)
+            shots = prediction.get("shots", 0)
+            league_id = prediction.get("league_id", 1)  # Default to global league
+            bet_amount = prediction.get("bet_amount", 50)  # Default bet amount
+            
+            # Validate bet amount
+            if bet_amount < 10 or bet_amount > 500:
+                results.append({
+                    "player_id": player_id,
+                    "success": False,
+                    "message": "Bet amount must be between 10 and 500"
+                })
+                continue
+            
+            if not player_id or player_id not in player_dict:
+                results.append({
+                    "player_id": player_id,
+                    "success": False,
+                    "message": "Player not found"
+                })
+                continue
+            
+            # Check if user has enough points in the league
+            c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = ?", 
+                     (user["id"], league_id))
+            league_score = c.fetchone()
+            
+            if not league_score or league_score[0] < bet_amount:
+                results.append({
+                    "player_id": player_id,
+                    "success": False,
+                    "message": f"Insufficient points to place a bet of {bet_amount}"
+                })
+                continue
+            
+            # Deduct bet amount from league score
+            new_score = league_score[0] - bet_amount
+            c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = ?", 
+                     (new_score, user["id"], league_id))
+            
+            # Also deduct from global league if this is not the global league
+            if int(league_id) != 1:
+                c.execute("SELECT score FROM league_scores WHERE user_id = ? AND league_id = 1", (user["id"],))
+                global_score = c.fetchone()
+                if global_score and global_score[0] >= bet_amount:
+                    new_global_score = global_score[0] - bet_amount
+                    c.execute("UPDATE league_scores SET score = ? WHERE user_id = ? AND league_id = 1", 
+                             (new_global_score, user["id"]))
+            
+            # Calculate points and multiplier (without minutes)
+            player = player_dict[player_id]
+            points_data = player_prediction_system.calculate_points(
+                player, goals, shots
+            )
+            
+            # Check if prediction already exists
+            c.execute('''
+                SELECT id FROM user_player_predictions 
+                WHERE user_id = ? AND match_id = ? AND player_id = ? AND league_id = ?
+            ''', (user["id"], match_id, player_id, league_id))
+            existing = c.fetchone()
+            
+            if existing:
+                # Update existing prediction
+                c.execute('''
+                    UPDATE user_player_predictions 
+                    SET goals_prediction = ?, shots_prediction = ?, minutes_prediction = 0,
+                        multiplier = ?, potential_points = ?, bet_amount = ?, created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (goals, shots, points_data["multiplier"], points_data["potential_points"], 
+                      bet_amount, existing[0]))
+            else:
+                # Insert new prediction
+                c.execute('''
+                    INSERT INTO user_player_predictions
+                    (user_id, match_id, player_id, goals_prediction, shots_prediction, 
+                     minutes_prediction, multiplier, potential_points, league_id, bet_amount)
+                    VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+                ''', (user["id"], match_id, player_id, goals, shots, 
+                     points_data["multiplier"], points_data["potential_points"], league_id, bet_amount))
+            
+            # Also save to global league if this is not the global league
+            if int(league_id) != 1:
+                # Check if prediction already exists in global league
+                c.execute('''
+                    SELECT id FROM user_player_predictions 
+                    WHERE user_id = ? AND match_id = ? AND player_id = ? AND league_id = 1
+                ''', (user["id"], match_id, player_id))
+                global_existing = c.fetchone()
+                
+                if global_existing:
+                    # Update existing prediction in global league
+                    c.execute('''
+                        UPDATE user_player_predictions 
+                        SET goals_prediction = ?, shots_prediction = ?, minutes_prediction = 0,
+                            multiplier = ?, potential_points = ?, bet_amount = ?, created_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ''', (goals, shots, points_data["multiplier"], points_data["potential_points"], 
+                         bet_amount, global_existing[0]))
+                else:
+                    # Insert new prediction in global league
+                    c.execute('''
+                        INSERT INTO user_player_predictions
+                        (user_id, match_id, player_id, goals_prediction, shots_prediction, 
+                         minutes_prediction, multiplier, potential_points, league_id, bet_amount)
+                        VALUES (?, ?, ?, ?, ?, 0, ?, ?, 1, ?)
+                    ''', (user["id"], match_id, player_id, goals, shots, 
+                         points_data["multiplier"], points_data["potential_points"], bet_amount))
+            
             results.append({
                 "player_id": player_id,
-                "success": False,
-                "message": "Player not found"
+                "success": True,
+                "multiplier": points_data["multiplier"],
+                "potential_points": points_data["potential_points"]
             })
-            continue
         
-        # Calculate points and multiplier
-        player = player_dict[player_id]
-        points_data = player_prediction_system.calculate_points(
-            player, goals, shots
-        )
+        conn.commit()
         
-        # Save prediction (pass 0 for minutes field since it still exists in the DB)
-        success = save_player_prediction(
-            user["id"], match_id, player_id,
-            goals, shots, 0,  # 0 for minutes
-            multiplier=points_data["multiplier"],
-            potential_points=points_data["potential_points"]
-        )
-        
-        results.append({
-            "player_id": player_id,
-            "success": success,
-            "multiplier": points_data["multiplier"],
-            "potential_points": points_data["potential_points"]
-        })
+    except Exception as e:
+        import traceback
+        print(f"Error saving player predictions: {e}")
+        print(traceback.format_exc())
+        conn.rollback()
+        return jsonify({"error": f"Error saving predictions: {str(e)}"})
+    finally:
+        conn.close()
     
     return jsonify({"results": results})
 
@@ -712,10 +875,14 @@ def login():
         username = form.username.data
         password = form.password.data
 
-        user = get_user(username)  # Fetch user from database.. redundant?
+        user = get_user(username)  # Fetch user from database
 
         if user and verify_password(username, password):
             session["username"] = username  # Store user session
+            
+            # Ensure user is in global league
+            ensure_user_in_global_league(user["id"], username)
+            
             flash("Login successful!", "success")
             return redirect(url_for("main.home"))
         else:
@@ -750,6 +917,12 @@ def register():
             flash("Username already exists!", "danger")
         else:
             if add_user(username, password):
+                # Get the newly created user
+                user = get_user(username)
+                
+                # Add user to global league
+                ensure_user_in_global_league(user["id"], username)
+                
                 flash("Registration successful! Please login.", "success")
                 return redirect(url_for("main.login"))
             else:

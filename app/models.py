@@ -62,8 +62,11 @@ def init_db():
                     points_earned INTEGER DEFAULT NULL,
                     exact_score BOOLEAN DEFAULT FALSE,
                     correct_result BOOLEAN DEFAULT FALSE,
+                    league_id INTEGER DEFAULT 1,
+                    bet_amount INTEGER DEFAULT 0,
+                    outcome_prediction TEXT DEFAULT NULL,
                     FOREIGN KEY (user_id) REFERENCES users (id),
-                    UNIQUE (user_id, match_id)
+                    FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id)
                 )
             ''')
             
@@ -81,8 +84,10 @@ def init_db():
                     points_earned INTEGER DEFAULT NULL,
                     prediction_correct BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    league_id INTEGER DEFAULT 1,
+                    bet_amount INTEGER DEFAULT 0,
                     FOREIGN KEY (user_id) REFERENCES users (id),
-                    UNIQUE (user_id, match_id, player_id)
+                    FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id)
                 )
             ''')
             
@@ -99,6 +104,10 @@ def init_db():
                 )
             ''')
             conn.commit()
+            
+            # Create global league
+            ensure_global_league_exists()
+            
         except Error as e:
             print(f"Error creating database: {e}")
         finally:
@@ -772,3 +781,81 @@ def get_profile_pic(user):
         finally:
             conn.close()
     return profile_pic
+
+def ensure_global_league_exists():
+    """
+    Make sure the global league exists in the database.
+    """
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Check if global league exists (ID = 1)
+            c.execute("SELECT id FROM fantasyLeagues WHERE id = 1")
+            global_league = c.fetchone()
+            
+            if not global_league:
+                # Create global league if it doesn't exist
+                c.execute('''
+                    INSERT INTO fantasyLeagues 
+                    (id, league_name, league_type, privacy, members) 
+                    VALUES (1, 'Global Ranking', 'classic', 'Public', '')
+                ''')
+                conn.commit()
+                print("Created Global Ranking league")
+            
+            return True
+        except Error as e:
+            print(f"Error ensuring global league exists: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+def ensure_user_in_global_league(user_id, username):
+    """
+    Make sure the user is part of the global league.
+    Called when a user logs in or registers.
+    """
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Check if user is in global league scores
+            c.execute("SELECT id FROM league_scores WHERE user_id = ? AND league_id = 1", (user_id,))
+            user_score = c.fetchone()
+            
+            if not user_score:
+                # Add user to global league scores with starting score
+                c.execute("INSERT INTO league_scores (user_id, league_id, score) VALUES (?, 1, 1000)", (user_id,))
+                
+                # Update global league members
+                c.execute("SELECT members FROM fantasyLeagues WHERE id = 1")
+                members_row = c.fetchone()
+                members = members_row[0].split(",") if members_row and members_row[0] else []
+                
+                if username not in members:
+                    members.append(username)
+                    updated_members = ",".join(members)
+                    c.execute("UPDATE fantasyLeagues SET members = ? WHERE id = 1", (updated_members,))
+                
+                # Add global league to user's leagues
+                c.execute("SELECT leagues FROM users WHERE id = ?", (user_id,))
+                leagues_row = c.fetchone()
+                user_leagues = leagues_row[0] if leagues_row and leagues_row[0] else ""
+                
+                if "1" not in user_leagues.split(","):
+                    updated_leagues = f"{user_leagues},1".strip(",")
+                    c.execute("UPDATE users SET leagues = ? WHERE id = ?", (updated_leagues, user_id))
+                
+                conn.commit()
+            
+            return True
+        except Error as e:
+            print(f"Error adding user to global league: {e}")
+            return False
+        finally:
+            conn.close()
+    return False

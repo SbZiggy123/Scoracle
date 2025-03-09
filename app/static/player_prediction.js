@@ -79,10 +79,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Round to 2 decimal places
         multiplier = Math.round(multiplier * 100) / 100;
         
-        // Calculate potential points
-        const points = Math.round(100 * multiplier);
+        // Get bet amount
+        const betAmount = document.querySelector('#player_bet_amount').value || 50;
         
-        return { multiplier, points };
+        // Calculate potential points based on bet amount
+        const points = Math.round(betAmount * multiplier);
+        
+        return { multiplier, points, betAmount };
     }
     
     // Update multiplier display when inputs change
@@ -103,6 +106,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 updatePlayerMultiplier(playerId);
             });
         });
+        
+        const betAmountInput = document.querySelector('#player_bet_amount');
+        if (betAmountInput) {
+            betAmountInput.addEventListener('input', function() {
+                // Make sure bet amount is within bounds
+                let amount = parseInt(this.value) || 0;
+                amount = Math.max(10, Math.min(500, amount));
+                this.value = amount;
+                
+                // Update all visible player multipliers
+                document.querySelectorAll('[data-player-id]').forEach(elem => {
+                    if (elem.tagName === 'TR') {
+                        updatePlayerMultiplier(elem.dataset.playerId);
+                    }
+                });
+            });
+        }
     }
     
     // Update multiplier display for a specific player
@@ -136,18 +156,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function savePlayerPrediction(playerId) {
         const goalsInput = document.querySelector(`.player-goals-input[data-player-id="${playerId}"]`);
         const shotsInput = document.querySelector(`.player-shots-input[data-player-id="${playerId}"]`);
+        const leagueSelect = document.querySelector('#player_league_select');
+        const betAmountInput = document.querySelector('#player_bet_amount');
         
-        if (!goalsInput || !shotsInput) return;
+        if (!goalsInput || !shotsInput || !leagueSelect || !betAmountInput) return;
         
         const goals = parseInt(goalsInput.value) || 0;
         const shots = parseInt(shotsInput.value) || 0;
+        const leagueId = leagueSelect.value;
+        const betAmount = parseInt(betAmountInput.value) || 50;
         
         // Create prediction array with just this player
         const predictions = [{
             player_id: playerId,
             goals: goals,
             shots: shots,
-            minutes: 0  // Set to 0 as we're not using minutes anymore
+            league_id: leagueId,
+            bet_amount: betAmount
         }];
         
         // Send to end
@@ -167,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Save all button
     const saveAllButton = document.getElementById('save-all-player-predictions');
-    
+     
     if (saveAllButton) {
         saveAllButton.addEventListener('click', function() {
             saveAllPlayerPredictions();
@@ -177,6 +202,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save all player predictions. Bottom button
     function saveAllPlayerPredictions() {
         const predictions = [];
+        const leagueSelect = document.querySelector('#player_league_select');
+        const betAmountInput = document.querySelector('#player_bet_amount');
+        
+        if (!leagueSelect || !betAmountInput) return;
+        
+        const leagueId = leagueSelect.value;
+        const betAmount = parseInt(betAmountInput.value) || 50;
         
         // Collect all player predictions that have at least one field filled
         document.querySelectorAll('[data-player-id]').forEach(elem => {
@@ -194,7 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     player_id: playerId,
                     goals: parseInt(goalsInput.value) || 0,
                     shots: parseInt(shotsInput.value) || 0,
-                    minutes: 0  // Set to 0 as we're not using minutes anymore
+                    league_id: leagueId,
+                    bet_amount: betAmount
                 });
             }
         });

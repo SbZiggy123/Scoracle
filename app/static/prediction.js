@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const oddsMultiplierSpan = document.getElementById('odds-multiplier');
     const exactPointsSpan = document.getElementById('exact-points');
     const resultPointsSpan = document.getElementById('result-points');
+    const betAmountInput = document.getElementById('bet_amount');
     
     // Get data from the template 
     const matchData = document.getElementById('match-data');
@@ -26,10 +27,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate multiplier (capped at 8x)
         const oddsMultiplier = Math.min(1.0 + (totalDiff * 0.5), 8.0);
         
+        // Calculate potential points based on bet amount
+        const betAmount = parseInt(betAmountInput.value) || 50;
+        
         return {
             multiplier: oddsMultiplier.toFixed(2),
-            exactScore: Math.round(basePoints * oddsMultiplier),
-            correctResult: basePoints
+            exactScore: Math.round(betAmount * oddsMultiplier),
+            correctResult: Math.round(betAmount * 2)
         };
     }
 
@@ -48,6 +52,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for score inputs
     homeScoreInput.addEventListener('input', updatePredictionDisplay);
     awayScoreInput.addEventListener('input', updatePredictionDisplay);
+    
+    // Add event listener for bet amount changes
+    if (betAmountInput) {
+        betAmountInput.addEventListener('input', function() {
+            // Make sure bet amount is within bounds
+            let amount = parseInt(this.value) || 0;
+            amount = Math.max(10, Math.min(500, amount));
+            this.value = amount;
+            
+            updatePredictionDisplay();
+        });
+    }
 
     // Initialize display
     updatePredictionDisplay();

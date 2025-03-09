@@ -73,7 +73,7 @@
                                 {% endif %}
                             </div>
                         </div>
-
+            
                         <div class="prediction-odds">
                             <p>Multiplier: <span id="odds-multiplier">1.00</span>x</p>
                             <p>Potential Points:</p>
@@ -81,6 +81,24 @@
                                 <li>Exact Score: <span id="exact-points">100</span></li>
                                 <li>Correct Result: <span id="result-points">100</span></li>
                             </ul>
+                        </div>
+                        
+                        <div class="bet-details">
+                            <div class="league-selection">
+                                <label for="league_select">Place bet in league:</label>
+                                <select name="league_id" id="league_select">
+                                    <option value="1" selected>Global Ranking</option>
+                                    {% for league in user_leagues %}
+                                        <option value="{{ league.id }}">{{ league.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="bet-amount">
+                                <label for="bet_amount">Bet Amount:</label>
+                                <input type="number" id="bet_amount" name="bet_amount" min="10" max="500" value="50">
+                                <div class="bet-hint">Min: 10, Max: 500</div>
+                            </div>
                         </div>
                         
                         {{ form.submit(class="submit-prediction") }}
@@ -91,7 +109,7 @@
                             </div>
                         {% endif %}
                     </form>
-
+            
                     <div class="bets-link">
                         <a href="{{ url_for('main.yourBets') }}" class="view-bets-link">View All Your Bets</a>
                     </div>
@@ -173,7 +191,33 @@
                     </ul>
                 </div>
             </div>
-            <!-- Can put this wherever-->
+
+            <div class="player-bet-settings">
+                <h4>Bet Settings</h4>
+                <div class="bet-settings-container">
+                    <div class="league-selection">
+                        <label for="player_league_select">Place bet in league:</label>
+                        <select name="league_id" id="player_league_select">
+                            <option value="1" selected>Global Ranking</option>
+                            {% for league in user_leagues %}
+                                <option value="{{ league.id }}">{{ league.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="bet-amount">
+                        <label for="player_bet_amount">Bet Amount:</label>
+                        <input type="number" id="player_bet_amount" name="bet_amount" min="10" max="500" value="50">
+                        <div class="bet-hint">Min: 10, Max: 500</div>
+                    </div>
+                </div>
+                
+                <div class="bet-explanation">
+                    <p>The bet amount is deducted from your league balance when you place a bet. A successful prediction will earn you points based on the bet amount multiplied by the prediction multiplier. All bets affect your Global Rank</p>
+                </div>
+            </div>
+
+
 <!-- Player prediction section -->
             <div class="player-predictions">
                 <h3>Player Predictions</h3>
