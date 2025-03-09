@@ -1,12 +1,13 @@
 import aiohttp
 from understat import Understat
+import math
 
 '''PREDICTION MODEL'''
 # Gonna try basic class of functions
 class PredictionSystem:
     def __init__(self):
-        self.home_weight = 1.2  # Home advantage multiplier.. Change it? Maybe for teams that perform esp well at home?
-        self.base_points = 100  # Base points for correct predictions... More for risky... To be used in the leagues
+        self.home_weight = 1.05  # Home advantage multiplier.. Change it? Maybe for teams that perform esp well at home?
+        #self.base_points = 100  # Base points for correct predictions... More for risky... To be used in the leagues
         
     # Creating a summed xg here of last 5 games which will be used to predict score
     def calculate_expected_score(self, recent_xg, xg_performance=1.0):
@@ -173,7 +174,7 @@ class PredictionSystem:
             away_xg_performance = away_data["xg_performance"]
             
             # Calculate base expected scores with xG performance adjustment
-            home_expected = self.calculate_expected_score(home_data["xg"], home_xg_performance) * self.home_weight
+            home_expected = self.calculate_expected_score(home_data["xg"], home_xg_performance)
             away_expected = self.calculate_expected_score(away_data["xg"], away_xg_performance)
             
             # Adjust for opposition strength
@@ -213,9 +214,9 @@ class PredictionSystem:
     """User will alter his bet live IN the webapp. It NEEDS to update odds then and there... This will be moved to js"""
         
         # Server will use this when adding to DB... JS mirrors it
-    def calculate_points(self, home_expected, away_expected, user_prediction):
+    def calculate_points(self, home_expected, away_expected, user_prediction, bet_amount=100):
         """Calculate points and multiplier for user prediction"""
-        # Calculate how "unlikely" the user's prediction is
+        # Calculate how "unlikely" the user's prediction is for exact score
         home_diff = abs(user_prediction[0] - home_expected)
         away_diff = abs(user_prediction[1] - away_expected)
         total_diff = home_diff + away_diff
@@ -223,28 +224,85 @@ class PredictionSystem:
         # Apply dampening for extreme predictions
         if total_diff > 4:
             total_diff = 4 + (total_diff - 4) * 0.5
-            
         
-        odds_multiplier = round((min(1.0 + (total_diff * 0.5), 8.0)), 2)
+        # Calculate exact score multiplier 
+        exact_score_multiplier = round(min(1.0 + (total_diff * 0.5), 8.0), 2)
+        
+        # Determine the result of the user's prediction
+        predicted_result = "draw"
+        if user_prediction[0] > user_prediction[1]:
+            predicted_result = "home_win"
+        elif user_prediction[0] < user_prediction[1]:
+            predicted_result = "away_win"
+        
+        # Get probabilities for each outcome
+        probabilities = self.calculate_probabilities(home_expected, away_expected)
+        
+        # Get the probability of the predicted result
+        result_probability = 0
+        if predicted_result == "home_win":
+            result_probability = probabilities["home_win"] / 100
+        elif predicted_result == "draw":
+            result_probability = probabilities["draw"] / 100
+        else:
+            result_probability = probabilities["away_win"] / 100
+        
+        # Calculate result multiplier based on how unlikely the predicted result is
+        result_multiplier = round(min(1.0 + (1.5 * (1 - result_probability)), 5.0), 2)
         
         return {
-            "multiplier": odds_multiplier,
-            "exact_score": int(self.base_points * odds_multiplier),
-            "correct_result": int(self.base_points)
+            "multiplier": exact_score_multiplier,
+            "exact_score": int(bet_amount * exact_score_multiplier),
+            "correct_result": int(bet_amount * result_multiplier),
+            "predicted_result": predicted_result,
+            "result_multiplier": result_multiplier
         }
     
     def calculate_probabilities(self, home_expected, away_expected):
         """Calculate win/draw/loss probabilities"""
-        diff = home_expected - away_expected
-        home_win = min(0.45 + (0.1 * diff), 0.9)
-        draw = max(0.2 - (0.05 * abs(diff)), 0.05)
-        away_win = 1 - (home_win + draw)
+        home_probs = {}
+        away_probs = {}
+        
+        # Calculate goal probabilities for each team fix so
+        for i in range(7):
+            home_probs[i] = poisson_probability(i, home_expected)
+            away_probs[i] = poisson_probability(i, away_expected)
+        
+        # Calculate match outcome probabilities
+        home_win_prob = 0
+        draw_prob = 0
+        away_win_prob = 0
+        
+        # Sum probabilities for each outcome
+        for home_goals in range(7):
+            for away_goals in range(7):
+                prob = home_probs[home_goals] * away_probs[away_goals]
+                
+                if home_goals > away_goals:
+                    home_win_prob += prob
+                elif home_goals == away_goals:
+                    draw_prob += prob
+                else:
+                    away_win_prob += prob
+        
+        # Apply home advantage adjustment for home win
+        home_edge = 0.05  # 5% home advantage
+        home_win_prob = min(home_win_prob + home_edge, 0.9)
+        
+        #  sum to 1
+        total = home_win_prob + draw_prob + away_win_prob
+        home_win_prob /= total
+        draw_prob /= total
+        away_win_prob /= total
         
         return {
-            "home_win": round(home_win * 100, 1),
-            "draw": round(draw * 100, 1),
-            "away_win": round(away_win * 100, 1)
+            "home_win": round(home_win_prob * 100, 1),
+            "draw": round(draw_prob * 100, 1),
+            "away_win": round(away_win_prob * 100, 1)
         }
     
+    
+def poisson_probability(k, lambd):
+    return (math.exp(-lambd) * (lambd ** k)) / math.factorial(k)
     
     

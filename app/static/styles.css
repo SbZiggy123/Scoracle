@@ -507,9 +507,8 @@ Could probably add more*/
 .dash-head{
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    grid-column-gap: 0px;
-    grid-row-gap: 0px; 
+    grid-template-rows: repeat(3, 1fr);
+    gap: 0px;
 }
 
 .dash-head h1{
@@ -517,13 +516,14 @@ Could probably add more*/
 }
 
 .dash-head p{
-    background-color:gold;
+    background: #09b7e8;
     font-size: x-large;
     font-weight: bold;
     margin: 10%;
-    border: 2px solid;
-    border-radius: 5px;
-    text-align: left;
+    padding-top: 5%;
+    text-align: center;
+    box-shadow: #0056b3;
+    border-radius: 5%;
 }
 
 .dashboard a{
@@ -535,6 +535,7 @@ Could probably add more*/
     position: right;
     max-width: 80%;
     padding: 10%;
+    grid-row: span 3 / span 3;
 }
 
 .dash-head .logout{
@@ -1804,3 +1805,4 @@ body {
     flex: 1;
     min-width: 200px;
 }
+

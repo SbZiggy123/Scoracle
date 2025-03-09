@@ -11,6 +11,7 @@ from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
+from datetime import datetime
 
 main = Blueprint('main', __name__)
 app = Flask(__name__)
@@ -171,7 +172,6 @@ def join_public_league(league_id):
 #called when user clicks on league name
 @main.route("/league/<int:league_id>")
 async def league(league_id):
-    """View a specific league after joining it, including leaderboard and fixtures."""
     league = get_league_by_id(league_id)
     if not league:
         flash("League not found")
@@ -181,12 +181,33 @@ async def league(league_id):
     members_str = league.get("members", "")
     member_list = [x.strip() for x in members_str.split(",") if x.strip()] if members_str else []
     league["member_list"] = member_list
+
     if league_type == "classic":
         league["leaderboard"] = get_league_leaderboard(league_id)
     elif league_type == "head2head":
         league["leaderboard"] = get_H2H_league_leaderboard(league_id)
+
+        if league.get("season_end"):
+            season_end_str = league["season_end"]
+            try:
+                season_end_dt = datetime.strptime(season_end_str, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                season_end_dt = None
+
+            if season_end_dt:
+                diff = season_end_dt - datetime.now()
+                time_left = int(diff.total_seconds())
+                if time_left < 0:
+                    time_left = 0
+                league["time_left"] = time_left
+            else:
+                league["time_left"] = 0
+        else:
+            league["time_left"] = 0
+
     else:
         flash("error creating league leaderboard")
+
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         fixtures = await understat.get_league_fixtures("epl", 2024)
@@ -226,7 +247,6 @@ async def league_update():
     if not league_id or not match_id:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-    # Use Understat to fetch match results
     async with aiohttp.ClientSession() as session_obj:
         understat = Understat(session_obj)
         results = await understat.get_league_results("epl", 2024)
@@ -464,7 +484,8 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
             points_data = prediction_system.calculate_points(
                 home_expected,
                 away_expected,
-                [home_score, away_score]
+                [home_score, away_score],
+                bet_amount  
             )
             
             print(f"DEBUG: Points data: {points_data}")
