@@ -14,7 +14,7 @@
             <p><strong>Code:</strong> <span class="league-code">{{ league.league_code }}</span></p>
           {% endif %}
           
-          {% if league.league_type == "head2head" %}
+          {% if league.league_type == "seasonal" %}
             <div class="countdown-container">
               <p>Season end:</p>
               <div id="countdown"></div>
@@ -62,7 +62,7 @@
             </tbody>
           </table>
 
-        {% elif league.league_type == "head2head" %}
+        {% elif league.league_type == "seasonal" %}
         <div class="leaderboard-container">
           <table class="leaderboard-table">
             <thead>
