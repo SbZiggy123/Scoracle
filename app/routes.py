@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_H2H_league_leaderboard
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -177,12 +177,16 @@ async def league(league_id):
         flash("League not found")
         return redirect(url_for("main.join_league"))
 
+    league_type = league.get("league_type")
     members_str = league.get("members", "")
     member_list = [x.strip() for x in members_str.split(",") if x.strip()] if members_str else []
     league["member_list"] = member_list
-
-    league["leaderboard"] = get_league_leaderboard(league_id)
-
+    if league_type == "classic":
+        league["leaderboard"] = get_league_leaderboard(league_id)
+    elif league_type == "head2head":
+        league["leaderboard"] = get_H2H_league_leaderboard(league_id)
+    else:
+        flash("error creating league leaderboard")
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         fixtures = await understat.get_league_fixtures("epl", 2024)

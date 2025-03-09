@@ -8,10 +8,18 @@
       <div class="league-header">
         <div class="league-details">
           <h1>{{ league.league_name }}</h1>
-          <p>{{ league.league_type|capitalize }}</p>
+          <p>{{ league.league_type }}</p>
           <p>{{ league.privacy }}</p>
           {% if league.privacy == "Private" and league.league_code %}
             <p><strong>Code:</strong> <span class="league-code">{{ league.league_code }}</span></p>
+          {% endif %}
+          
+          {% if league.league_type == "head2head" %}
+          <p> if statement works</p>
+          <div class="countdown-container">
+            <p>season end:</p>
+            <div id="countdown"></div>
+          </div>
           {% endif %}
           <p>{{ league.created_at[:10] }}</p>
         </div>
@@ -31,30 +39,55 @@
       </div>
 
       <h2 class="leaderboard-title">Leaderboard</h2>
-      <div class="leaderboard-container">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Score</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard">
-            {% for player in league.leaderboard %}
+      {% if league.league_type == "classic" %}
+        <div class="leaderboard-container">
+          <table class="leaderboard-table">
+            <thead>
               <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.score }}</td>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody id="leaderboard">
+              {% for player in league.leaderboard %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ player.username }}</td>
+                  <td>{{ player.score }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        {% elif league.league_type == "head2head" %}
+        <div class="leaderboard-container">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Trophies</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard">
+              {% for player in league.leaderboard %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ player.username }}</td>
+                  <td>{{ player.score }}</td>
+                  <td>{{ player.trophies }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+
         <h2 class="leaderboard-title">Upcoming fixtures</h2>
       </div>
       {% for fixture in upcoming_fixtures %}
       <div class="match-item">
-
         <form action="javascript:void(0);" class="bet-form">
           <button type="button" class="bet-button"
               onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'home', this)">

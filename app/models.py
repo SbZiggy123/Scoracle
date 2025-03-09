@@ -3,6 +3,7 @@ from sqlite3 import Error
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import string
+from datetime import datetime, timedelta
 
 DATABASE = 'scoracle.db'
 
@@ -43,7 +44,8 @@ def init_db():
                     privacy TEXT CHECK(privacy IN ('Public', 'Private')) NOT NULL,
                     league_code TEXT UNIQUE,
                     members TEXT DEFAULT '',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    season_end TIMESTAMP DEFAULT NULL
                 )
             ''')
             # User predictions
@@ -98,6 +100,7 @@ def init_db():
                     user_id INTEGER NOT NULL,
                     league_id INTEGER NOT NULL,
                     score INTEGER DEFAULT 1000,
+                    trophies INTEGER DEFAULT 0,
                     FOREIGN KEY (user_id) REFERENCES users (id),
                     FOREIGN KEY (league_id) REFERENCES fantasyLeagues (id),
                     UNIQUE (user_id, league_id)
@@ -370,11 +373,19 @@ def add_fantasy_league(league_name, league_type, privacy, username):
             league_code = generate_league_code() if privacy == "Private" else None
             c = conn.cursor()
             c.execute('''
-                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members, season_end)
+                VALUES (?, ?, ?, ?, ?, null)
             ''', (league_name, league_type, privacy, league_code, str(username)))
-            
             league_id = c.lastrowid
+            
+            #set league end for 1 week from creation
+            if league_type == "head2head":
+                season_end = (datetime.now() + timedelta(weeks=1)).isoformat(sep=' ', timespec='seconds')
+                c.execute('''
+                    UPDATE fantasyLeagues 
+                    SET season_end = ?
+                    WHERE id = ?
+                ''', (season_end, league_id))
 
             # Update the creator's leagues column
             c.execute("SELECT leagues FROM users WHERE username = ?", (username,))
@@ -623,6 +634,53 @@ def get_league_leaderboard(league_id):
             conn.close()
     return []
 
+def get_H2H_league_leaderboard(league_id):
+    """Fetch the leaderboard for a specific Head2Head league"""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Get all members of the league
+            c.execute("SELECT members FROM fantasyLeagues WHERE id = ?", (league_id,))
+            members_str = c.fetchone()
+            if not members_str or not members_str[0]:
+                return []
+
+            member_list = [x.strip() for x in members_str[0].split(",") if x.strip()]
+
+            # Fetch user IDs for these members
+            placeholders = ','.join(['?'] * len(member_list))
+            c.execute(f"SELECT id, username FROM users WHERE username IN ({placeholders})", member_list)
+            users = {row[0]: row[1] for row in c.fetchall()}  # Dict {user_id: username}
+
+            # Fetch existing scores from league_scores
+            c.execute("SELECT user_id, score FROM league_scores WHERE league_id = ?", (league_id,))
+            existing_scores = {row[0]: row[1] for row in c.fetchall()}  # Dict {user_id: score}
+            
+            # Fetch existing trophies from league_scores
+            c.execute("SELECT user_id, trophies FROM league_scores WHERE league_id = ?", (league_id,))
+            existing_trophies = {row[0]: row[1] for row in c.fetchall()}  # Dict {user_id: trophies}
+
+            # Build the leaderboard
+            leaderboard = []
+            for user_id, username in users.items():
+                score = existing_scores.get(user_id, 0)
+                trophies = existing_trophies.get(user_id, 0) 
+                leaderboard.append({"username": username, "score": score, "trophies": trophies})
+
+            # Sort by score (highest first)
+            leaderboard.sort(key=lambda x: x["score"], reverse=True)
+
+            return leaderboard
+        except Error as e:
+            print(f"Error fetching leaderboard: {e}")
+            return []
+        finally:
+            conn.close()
+    return []
+
+
 def update_league_score(user_id, league_id, points):
     """Update a user's score in a specific league."""
     conn = get_db_connection()
@@ -855,6 +913,52 @@ def ensure_user_in_global_league(user_id, username):
             return True
         except Error as e:
             print(f"Error adding user to global league: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
+
+
+#head2head mode functions
+def end_week_for_league(league_id):
+    """
+    Identify the top scorer in the league, increment their trophy count,
+    then reset all scores to 1000.
+    """
+    conn = get_db_connection()
+    if conn:
+        try:
+            c = conn.cursor()
+            # 1. Find the user_id with the highest score
+            c.execute("""
+                SELECT user_id, score
+                FROM league_scores
+                WHERE league_id = ?
+                ORDER BY score DESC
+                LIMIT 1
+            """, (league_id,))
+            top_user = c.fetchone()
+            
+            if top_user:
+                top_user_id, top_score = top_user
+                # 2. Increment their trophy count
+                c.execute("""
+                    UPDATE league_scores
+                    SET trophies = trophies + 1
+                    WHERE user_id = ? AND league_id = ?
+                """, (top_user_id, league_id))
+            
+            # 3. Reset scores to 0 for everyone
+            c.execute("""
+                UPDATE league_scores
+                SET score = 1000
+                WHERE league_id = ?
+            """, (league_id,))
+            
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error ending week: {e}")
             return False
         finally:
             conn.close()
