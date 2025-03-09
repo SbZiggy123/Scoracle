@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_H2H_league_leaderboard
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_H2H_league_leaderboard, get_recent_league_bets
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -168,6 +168,7 @@ def join_public_league(league_id):
 
     return redirect(url_for("main.join_league"))
 
+
 #called when user clicks on league name
 @main.route("/league/<int:league_id>")
 async def league(league_id):
@@ -187,12 +188,38 @@ async def league(league_id):
         league["leaderboard"] = get_H2H_league_leaderboard(league_id)
     else:
         flash("error creating league leaderboard")
-    async with aiohttp.ClientSession() as session:
-        understat = Understat(session)
-        fixtures = await understat.get_league_fixtures("epl", 2024)
-        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+    
+    recent_bets = []
+    if league_type == "classic":
+        recent_bets_info = get_recent_league_bets(league_id)
+        
+        # Get match details for these bets
+        match_details = {}
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            fixtures = await understat.get_league_fixtures("epl", 2024)
+            results = await understat.get_league_results("epl", 2024)
+            
+            all_matches = fixtures + results
+            
+            # Get fixture IDs ezier
+            fixture_ids = [f["id"] for f in fixtures]
+            
+            for match in all_matches:
+                match_id = match["id"]
+                match_details[match_id] = match
+            
+        # Combine bet info with match details
+        for bet in recent_bets_info:
+            match_id = bet['match_id']
+            if match_id in match_details:
+                match = match_details[match_id]
+                # match still a fixture
+                if match_id in fixture_ids:
+                    bet['match'] = match
+                    recent_bets.append(bet)
 
-    return render_template("league.html", league=league, upcoming_fixtures=upcoming_fixtures)
+    return render_template("league.html", league=league, recent_bets=recent_bets)
 
 @main.route('/place_bet', methods=['POST'])
 def place_bet_route():

@@ -963,3 +963,53 @@ def end_week_for_league(league_id):
         finally:
             conn.close()
     return False
+
+def get_recent_league_bets(league_id, limit=5):
+    """Get the most recent unique fixture bets made by users in a league for league.html"""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Fget all unique match_ids with their latest bet time
+            c.execute('''
+                SELECT match_id, MAX(created_at) as latest_bet_time
+                FROM user_predictions
+                WHERE league_id = ?
+                GROUP BY match_id
+                ORDER BY latest_bet_time DESC
+                LIMIT ?
+            ''', (league_id, limit))
+            
+            matches = c.fetchall()
+            
+            # For each match, get the user who made the latest bet
+            recent_bets = []
+            for match in matches:
+                match_id = match[0]
+                c.execute('''
+                    SELECT u.username, p.created_at, p.home_score, p.away_score
+                    FROM user_predictions p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.match_id = ? AND p.league_id = ?
+                    ORDER BY p.created_at DESC
+                    LIMIT 1
+                ''', (match_id, league_id))
+                
+                bet_info = c.fetchone()
+                if bet_info:
+                    recent_bets.append({
+                        'match_id': match_id,
+                        'username': bet_info[0],
+                        'created_at': bet_info[1],
+                        'home_score': bet_info[2],
+                        'away_score': bet_info[3]
+                    })
+            
+            return recent_bets
+        except Error as e:
+            print(f"Error getting recent league bets: {e}")
+            return []
+        finally:
+            conn.close()
+    return []

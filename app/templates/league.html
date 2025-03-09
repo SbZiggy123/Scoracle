@@ -84,47 +84,51 @@
           </table>
           {% endif %}
 
-        <h2 class="leaderboard-title">Upcoming fixtures</h2>
       </div>
-      {% for fixture in upcoming_fixtures %}
-      <div class="match-item">
-        <form action="javascript:void(0);" class="bet-form">
-          <button type="button" class="bet-button"
-              onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'home', this)">
-              Quick Bet
-          </button>
-        </form>
+    
+      {% if league.league_type == "classic" %}
+      <h2 class="leaderboard-title">Recent League Bets</h2>
+      <div class="recent-bets-container">
+        {% if recent_bets %}
+          {% for bet in recent_bets %}
+            <div class="match-item">
+              <div class="recent-bet-info">
+                <span class="bet-user">{{ bet.username }}</span> predicted 
+                <span class="bet-score">{{ bet.home_score }} - {{ bet.away_score }}</span>
+                <span class="bet-time" title="{{ bet.created_at }}">
+                  {{ bet.created_at.split(' ')[0] }}
+                </span>
+              </div>
+              
+              <a href="{{ url_for('main.prediction', match_id=bet.match_id) }}" class="match-link">
+                <div class="match-details">
+                  <img src="" alt="Home Crest"
+                    class="team-crest"
+                    data-team="{{ bet.match.h.title }}">
 
-        <img src="" alt="Home Crest"
-          class="team-crest"
-          data-team="{{ fixture.h.title }}">
+                  <span class="team-name">{{ bet.match.h.title }}</span>
 
-        <span class="team-name">{{ fixture.h.title }}</span>
+                  <div class="match-time-vs">
+                    <span class="match-time">
+                      {{ bet.match.datetime.split(' ')[1][:5] }}
+                    </span>
+                    <span class="match-vs">VS</span>
+                  </div>
 
-        <div class="match-time-vs">
-          <a href="{{ url_for('main.prediction', match_id=fixture.id) }}" class="match-time-link">
-            <span class="match-time">
-              {{ fixture.datetime.split(' ')[1][:5] }}
-            </span>
-          </a>
-          <span class="match-vs">VS</span>
-        </div>
+                  <span class="team-name">{{ bet.match.a.title }}</span>
 
-        <span class="team-name">{{ fixture.a.title }}</span>
-
-        <img src="" alt="Away Crest"
-           class="team-crest"
-          data-team="{{ fixture.a.title }}">
-
-        <form action="javascript:void(0);" class="bet-form">
-          <button type="button" class="bet-button"
-              onclick="placeBet({{ league.id }}, '{{ fixture.id }}', 'away', this)">
-              Quick Bet
-          </button>
-        </form>
+                  <img src="" alt="Away Crest"
+                    class="team-crest"
+                    data-team="{{ bet.match.a.title }}">
+                </div>
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="no-bets-message">No recent bets have been made in this league yet.</p>
+        {% endif %}
       </div>
-      {% endfor %}
-    </div>  
+      {% endif %}
     </main>
   </div>
 </div>
