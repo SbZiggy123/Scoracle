@@ -44,6 +44,7 @@ def init_db():
                     privacy TEXT CHECK(privacy IN ('Public', 'Private')) NOT NULL,
                     league_code TEXT UNIQUE,
                     members TEXT DEFAULT '',
+                    creator TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     season_end TIMESTAMP DEFAULT NULL
                 )
@@ -373,9 +374,9 @@ def add_fantasy_league(league_name, league_type, privacy, username):
             league_code = generate_league_code() if privacy == "Private" else None
             c = conn.cursor()
             c.execute('''
-                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members, season_end)
-                VALUES (?, ?, ?, ?, ?, null)
-            ''', (league_name, league_type, privacy, league_code, str(username)))
+                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members, creator, season_end)
+                VALUES (?, ?, ?, ?, ?, ?, null)
+            ''', (league_name, league_type, privacy, league_code, str(username), str(username)))
             league_id = c.lastrowid
             
             #set league end for 1 week from creation
@@ -428,15 +429,16 @@ def get_league_by_code(league_code):
     return None
 
 def get_league_by_id(league_id):
-    """Fetch league details by ID."""
+    """Fetch league details by ID"""
     conn = get_db_connection()
     if conn is not None:
         try:
             c = conn.cursor()
             c.execute("SELECT * FROM fantasyLeagues WHERE id = ?", (league_id,))
-            league = c.fetchone()
-            if league:
-                return dict(league)
+            row = c.fetchone()
+            if row:
+                league = dict(row)
+                return league
             return None
         except Error as e:
             print(f"Error fetching league: {e}")
@@ -679,6 +681,58 @@ def get_seasonal_league_leaderboard(league_id):
         finally:
             conn.close()
     return []
+
+
+def end_seasonal_round(league_id):
+    """End the current seasonal round, award a trophy to the top scorer, reset all users' scores, and set a new season_end for next round. """
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+
+            #get top scorer
+            c.execute("""
+                SELECT user_id, score
+                FROM league_scores
+                WHERE league_id = ?
+                ORDER BY score DESC
+                LIMIT 1
+            """, (league_id,))
+            top_user = c.fetchone()
+
+            if top_user:
+                top_user_id, _ = top_user
+                # 2. give them +1 trophy
+                c.execute("""
+                    UPDATE league_scores
+                    SET trophies = trophies + 1
+                    WHERE user_id = ? AND league_id = ?
+                """, (top_user_id, league_id))
+
+            # 3. Reset everyone's score to 1000
+            c.execute("""
+                UPDATE league_scores
+                SET score = 1000
+                WHERE league_id = ?
+            """, (league_id,))
+
+            # 4. Set the new season_end to one week from now
+            new_end_dt = datetime.now() + timedelta(weeks=1)
+            new_end_str = new_end_dt.strftime("%Y-%m-%d %H:%M:%S")
+            c.execute("""
+                UPDATE fantasyLeagues
+                SET season_end = ?
+                WHERE id = ?
+            """, (new_end_str, league_id))
+
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error ending seasonal round for league {league_id}: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
 
 
 def update_league_score(user_id, league_id, points):

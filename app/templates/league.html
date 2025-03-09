@@ -22,6 +22,11 @@
             <script>
               let timeLeft = {{ league["time_left"]|default(0)|int }};
             </script>
+            {% if session["username"] == league.creator %}
+              <form action="{{ url_for('main.end_season', league_id=league.id) }}" method="POST">
+                <button type="submit" class="btn btn-warning">end season early</button>
+              </form>
+            {% endif %}
           {% endif %}
           <p>{{ league.created_at[:10] }}</p>
         </div>
@@ -88,7 +93,6 @@
 
       </div>
     
-      {% if league.league_type == "classic" %}
       <h2 class="leaderboard-title">Recent League Bets</h2>
       <div class="recent-bets-container">
         {% if recent_bets %}
@@ -128,7 +132,6 @@
           {% endfor %}
         {% else %}
           <p class="no-bets-message">No recent bets have been made in this league yet.</p>
-        {% endif %}
       </div>
       {% endif %}
     </main>

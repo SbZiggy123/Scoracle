@@ -112,6 +112,27 @@ def create_league():
 
     return render_template("createLeague.html")
 
+#route to reset season on seasonal league. resetting timer and points, and awarding top player with trophy
+@main.route("/endSeason/<int:league_id>", methods=["POST"])
+def end_season(league_id):
+    league = get_league_by_id(league_id)
+    if not league:
+        flash("League not found.", "danger")
+        return redirect(url_for("main.home"))
+
+    if league.get("league_type") != "seasonal":
+        flash("This league is not a seasonal league!", "danger")
+        return redirect(url_for("main.league", league_id=league_id))
+    
+    from .models import end_seasonal_round
+    success = end_seasonal_round(league_id)
+    if success:
+        flash("Season ended! Trophies awarded and scores reset.", "success")
+    else:
+        flash("Error ending the season.", "danger")
+
+    return redirect(url_for("main.league", league_id=league_id))
+
 
 @main.route("/joinLeague", methods=["GET", "POST"])
 def join_league():
@@ -212,34 +233,33 @@ async def league(league_id):
         flash("error creating league leaderboard")
     
     recent_bets = []
-    if league_type == "classic":
-        recent_bets_info = get_recent_league_bets(league_id)
+    recent_bets_info = get_recent_league_bets(league_id)
         
-        # Get match details for these bets
-        match_details = {}
-        async with aiohttp.ClientSession() as session:
-            understat = Understat(session)
-            fixtures = await understat.get_league_fixtures("epl", 2024)
-            results = await understat.get_league_results("epl", 2024)
+    # Get match details for these bets
+    match_details = {}
+    async with aiohttp.ClientSession() as session:
+        understat = Understat(session)
+        fixtures = await understat.get_league_fixtures("epl", 2024)
+        results = await understat.get_league_results("epl", 2024)
             
-            all_matches = fixtures + results
+        all_matches = fixtures + results
             
-            # Get fixture IDs ezier
-            fixture_ids = [f["id"] for f in fixtures]
+        # Get fixture IDs ezier
+        fixture_ids = [f["id"] for f in fixtures]
             
-            for match in all_matches:
-                match_id = match["id"]
-                match_details[match_id] = match
+        for match in all_matches:
+            match_id = match["id"]
+            match_details[match_id] = match
             
         # Combine bet info with match details
-        for bet in recent_bets_info:
-            match_id = bet['match_id']
-            if match_id in match_details:
-                match = match_details[match_id]
-                # match still a fixture
-                if match_id in fixture_ids:
-                    bet['match'] = match
-                    recent_bets.append(bet)
+    for bet in recent_bets_info:
+        match_id = bet['match_id']
+        if match_id in match_details:
+            match = match_details[match_id]
+            # match still a fixture
+            if match_id in fixture_ids:
+                bet['match'] = match
+                recent_bets.append(bet)
 
     return render_template("league.html", league=league, recent_bets=recent_bets)
 
