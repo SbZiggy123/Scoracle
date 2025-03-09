@@ -191,4 +191,13 @@ class PlayerPredictionSystem:
         
         return round(multiplier, 2)
             
+    def calculate_points(self, player, predicted_goals, predicted_shots):
+        """Calculate potential points for a player prediction"""
+        multiplier = self.calculate_prediction_multiplier(
+            player, predicted_goals, predicted_shots
+        )
         
+        return {
+            "multiplier": multiplier,
+            "potential_points": int(self.base_points * multiplier)
+        }

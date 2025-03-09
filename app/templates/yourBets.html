@@ -163,10 +163,57 @@
         {% endif %}
         
         {% if not predictions and not player_predictions %}
-            <div class="no-bets-action">
-                <a href="{{ url_for('main.league_view', league_code='epl') }}" class="action-button">View Upcoming Matches</a>
-            </div>
-        {% endif %}
+        <div class="no-bets-action">
+            <a href="{{ url_for('main.league_view', league_code='epl') }}" class="action-button">View Upcoming Matches</a>
+        </div>
+    {% endif %}
+    
+    <div class="process-bets-container">
+        <button id="process-bets-btn" class="process-bets-button">Process Completed Matches</button>
+        <div id="process-result" class="process-result"></div>
+    </div>
+    
+    <script>
+        document.getElementById('process-bets-btn').addEventListener('click', function() {
+            this.disabled = true;
+            this.textContent = 'Processing now';
+            const resultElement = document.getElementById('process-result');
+            resultElement.textContent = '';
+            resultElement.classList.remove('success', 'error');
+            
+            fetch('/process_bets', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.disabled = false;
+                this.textContent = 'Process Completed Matches';
+                
+                if (data.success) {
+                    resultElement.textContent = data.message;
+                    resultElement.classList.add('success');
+                    
+                    // Refresh the page after a short delay to show updated results
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    resultElement.textContent = data.message;
+                    resultElement.classList.add('error');
+                }
+            })
+            .catch(error => {
+                console.error('Error processing bets:', error);
+                this.disabled = false;
+                this.textContent = 'Process Completed Matches';
+                resultElement.textContent = 'Error processing bets. Please try again.';
+                resultElement.classList.add('error');
+            });
+        });
+    </script>
     </main>
     <footer>Footer</footer>
 </div>

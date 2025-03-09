@@ -1067,3 +1067,313 @@ def get_recent_league_bets(league_id, limit=5):
         finally:
             conn.close()
     return []
+
+
+# Add this to models.py
+
+import aiohttp
+from datetime import datetime, timedelta
+import asyncio
+
+async def process_all_bets():
+    """
+    Process all pending bets for completed matches.
+    Returns the number of processed match predictions and player predictions.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return {"success": False, "message": "Database connection failed"}
+    
+    try:
+        # Get all pending predictions
+        c = conn.cursor()
+        c.execute("""
+            SELECT DISTINCT match_id FROM user_predictions 
+            WHERE points_earned IS NULL
+        """)
+        match_ids = [row[0] for row in c.fetchall()]
+        
+        c.execute("""
+            SELECT DISTINCT match_id FROM user_player_predictions 
+            WHERE points_earned IS NULL
+        """)
+        player_match_ids = [row[0] for row in c.fetchall()]
+        
+        # Combine both lists and remove duplicates
+        all_match_ids = list(set(match_ids + player_match_ids))
+        
+        if not all_match_ids:
+            return {"success": True, "message": "No pending bets to process", "matches_processed": 0, "predictions_processed": 0}
+        
+        # Process matches asynchronously
+        async with aiohttp.ClientSession() as session:
+            from understat import Understat
+            understat = Understat(session)
+            
+            # Get all completed matches from various leagues
+            all_results = {}
+            for league in ["epl", "La_liga", "Bundesliga", "Serie_A", "Ligue_1"]:
+                try:
+                    results = await understat.get_league_results(league, 2024)
+                    for match in results:
+                        all_results[match["id"]] = match
+                except Exception as e:
+                    print(f"Error fetching results for {league}: {e}")
+            
+            matches_processed = 0
+            match_predictions_processed = 0
+            player_predictions_processed = 0
+            
+            for match_id in all_match_ids:
+                # Check if the match exists in results and is completed
+                if match_id not in all_results:
+                    continue
+                
+                match = all_results[match_id]
+                match_datetime = datetime.strptime(match["datetime"], "%Y-%m-%d %H:%M:%S")
+                current_time = datetime.now()
+                
+                # Only process matches that ended at least 2 hours ago
+                if match_datetime + timedelta(hours=2) > current_time:
+                    continue
+                
+                # Process regular match predictions
+                if match_id in match_ids:
+                    processed = await process_match_predictions(conn, match_id, match)
+                    match_predictions_processed += processed
+                
+                # Process player predictions
+                if match_id in player_match_ids:
+                    processed = await process_player_predictions(conn, match_id, match, understat)
+                    player_predictions_processed += processed
+                
+                matches_processed += 1
+        
+        return {
+            "success": True,
+            "message": f"Processed {matches_processed} matches with {match_predictions_processed} match predictions and {player_predictions_processed} player predictions",
+            "matches_processed": matches_processed,
+            "match_predictions_processed": match_predictions_processed,
+            "player_predictions_processed": player_predictions_processed
+        }
+    
+    except Exception as e:
+        import traceback
+        print(f"Error processing bets: {e}")
+        print(traceback.format_exc())
+        return {"success": False, "message": f"Error processing bets: {str(e)}"}
+    
+    finally:
+        if conn:
+            conn.close()
+
+async def process_match_predictions(conn, match_id, match):
+    """Process all user predictions for a specific match."""
+    try:
+        c = conn.cursor()
+        
+        # Extract actual match results
+        home_goals = int(match["goals"]["h"])
+        away_goals = int(match["goals"]["a"])
+        
+        # Determine the actual result
+        if home_goals > away_goals:
+            actual_result = "home_win"
+        elif away_goals > home_goals:
+            actual_result = "away_win"
+        else:
+            actual_result = "draw"
+        
+        # Get all predictions for this match
+        c.execute("""
+            SELECT id, user_id, league_id, home_score, away_score, bet_amount, 
+                   potential_exact_points, potential_result_points, outcome_prediction
+            FROM user_predictions 
+            WHERE match_id = ? AND points_earned IS NULL
+        """, (match_id,))
+        
+        predictions = c.fetchall()
+        predictions_processed = 0
+        
+        for pred in predictions:
+            pred_id, user_id, league_id, home_score, away_score, bet_amount, potential_exact, potential_result, outcome_prediction = pred
+            
+            # For outcome-based predictions (without exact score)
+            if outcome_prediction:
+                if outcome_prediction == actual_result:
+                    # Correct outcome prediction
+                    points_earned = potential_result
+                    c.execute("""
+                        UPDATE user_predictions
+                        SET points_earned = ?, correct_result = TRUE
+                        WHERE id = ?
+                    """, (points_earned, pred_id))
+                    
+                    # Update league scores
+                    c.execute("""
+                        UPDATE league_scores
+                        SET score = score + ?
+                        WHERE user_id = ? AND league_id = ?
+                    """, (points_earned, user_id, league_id))
+                else:
+                    # Incorrect outcome prediction
+                    c.execute("""
+                        UPDATE user_predictions
+                        SET points_earned = 0, correct_result = FALSE
+                        WHERE id = ?
+                    """, (pred_id,))
+            else:
+                # For exact score predictions
+                exact_score = (home_score == home_goals and away_score == away_goals)
+                
+                # Determine if the result direction was correct
+                predicted_result = "draw"
+                if home_score > away_score:
+                    predicted_result = "home_win"
+                elif away_score > home_score:
+                    predicted_result = "away_win"
+                
+                correct_result = (predicted_result == actual_result)
+                
+                # Calculate points earned
+                if exact_score:
+                    points_earned = potential_exact
+                elif correct_result:
+                    points_earned = potential_result
+                else:
+                    points_earned = 0
+                
+                # Update prediction record
+                c.execute("""
+                    UPDATE user_predictions
+                    SET points_earned = ?, exact_score = ?, correct_result = ?
+                    WHERE id = ?
+                """, (points_earned, exact_score, correct_result, pred_id))
+                
+                # Update league scores if points were earned
+                if points_earned > 0:
+                    c.execute("""
+                        UPDATE league_scores
+                        SET score = score + ?
+                        WHERE user_id = ? AND league_id = ?
+                    """, (points_earned, user_id, league_id))
+            
+            predictions_processed += 1
+        
+        conn.commit()
+        return predictions_processed
+        
+    except Exception as e:
+        import traceback
+        print(f"Error processing match predictions for match {match_id}: {e}")
+        print(traceback.format_exc())
+        conn.rollback()
+        return 0
+
+async def process_player_predictions(conn, match_id, match, understat):
+    """Process all user player predictions for a specific match."""
+    try:
+        c = conn.cursor()
+        
+        # Get match player data
+        try:
+            match_players = await understat.get_match_players(match_id)
+            match_shots = await understat.get_match_shots(match_id)
+        except Exception as e:
+            print(f"Error fetching player data for match {match_id}: {e}")
+            return 0
+        
+        # Create a map of player_id to actual stats
+        player_stats = {}
+        
+        # Process home team players
+        if "h" in match_players:
+            for player_id, player_data in match_players["h"].items():
+                player_stats[player_id] = {
+                    "goals": int(player_data.get("goals", 0)),
+                    "shots": 0,  # Will count from shots data
+                    "minutes": int(player_data.get("time", 0))
+                }
+        
+        # Process away team players
+        if "a" in match_players:
+            for player_id, player_data in match_players["a"].items():
+                player_stats[player_id] = {
+                    "goals": int(player_data.get("goals", 0)),
+                    "shots": 0,  # Will count from shots data
+                    "minutes": int(player_data.get("time", 0))
+                }
+        
+        # Count shots for each player
+        for team in ["h", "a"]:
+            if team in match_shots:
+                for shot in match_shots[team]:
+                    player_id = shot.get("player_id")
+                    if player_id in player_stats:
+                        player_stats[player_id]["shots"] += 1
+        
+        # Get all player predictions for this match
+        c.execute("""
+            SELECT id, user_id, league_id, player_id, goals_prediction, shots_prediction,
+                   bet_amount, potential_points
+            FROM user_player_predictions 
+            WHERE match_id = ? AND points_earned IS NULL
+        """, (match_id,))
+        
+        predictions = c.fetchall()
+        predictions_processed = 0
+        
+        for pred in predictions:
+            pred_id, user_id, league_id, player_id, goals_prediction, shots_prediction, bet_amount, potential_points = pred
+            
+            # Check if we have actual stats for this player
+            if player_id not in player_stats:
+                # Player did not play, count as incorrect prediction
+                c.execute("""
+                    UPDATE user_player_predictions
+                    SET points_earned = 0, prediction_correct = FALSE
+                    WHERE id = ?
+                """, (pred_id,))
+                predictions_processed += 1
+                continue
+            
+            # Get actual stats
+            actual_goals = player_stats[player_id]["goals"]
+            actual_shots = player_stats[player_id]["shots"]
+            
+            # Evaluate prediction accuracy
+            # For simplicity, we'll say prediction is correct if both goals and shots are correct
+            prediction_correct = (goals_prediction == actual_goals and shots_prediction == actual_shots)
+            
+            # Calculate points earned
+            if prediction_correct:
+                points_earned = potential_points
+            else:
+                points_earned = 0
+            
+            # Update prediction record
+            c.execute("""
+                UPDATE user_player_predictions
+                SET points_earned = ?, prediction_correct = ?
+                WHERE id = ?
+            """, (points_earned, prediction_correct, pred_id))
+            
+            # Update league scores if points were earned
+            if points_earned > 0:
+                c.execute("""
+                    UPDATE league_scores
+                    SET score = score + ?
+                    WHERE user_id = ? AND league_id = ?
+                """, (points_earned, user_id, league_id))
+            
+            predictions_processed += 1
+        
+        conn.commit()
+        return predictions_processed
+        
+    except Exception as e:
+        import traceback
+        print(f"Error processing player predictions for match {match_id}: {e}")
+        print(traceback.format_exc())
+        conn.rollback()
+        return 0

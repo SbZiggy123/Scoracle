@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_seasonal_league_leaderboard, get_recent_league_bets
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_seasonal_league_leaderboard, get_recent_league_bets, process_all_bets
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
@@ -46,22 +46,8 @@ def initialise_database():
     
     
 @main.route('/')
-async def homepage():
-    for league_code in LEAGUE_MAPPING:
-        league_name = LEAGUE_MAPPING[league_code]
-        async with aiohttp.ClientSession() as session:
-            understat = Understat(session)
-            table = await understat.get_league_table(league_code, 2024, with_headers=False)
-            results = await understat.get_league_results(league_code, 2024)
-            recent_results = sorted(results, key=lambda x: x["datetime"], reverse=True)[:5]
-            fixtures = await understat.get_league_fixtures(league_code, 2024)
-            upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
-            return render_template("main.html",  # change it if you want. dont bother
-                            league_name=league_name,
-                            league_code=league_code,
-                            table=table,
-                            recent_results=recent_results,
-                            upcoming_fixtures=upcoming_fixtures)
+def mainpage():
+    return render_template("base.html")
 
 
 @main.route('/league/<league_code>')
@@ -125,27 +111,6 @@ def create_league():
         return redirect(url_for("main.create_league"))
 
     return render_template("createLeague.html")
-
-#route to reset season on seasonal league. resetting timer and points, and awarding top player with trophy
-@main.route("/endSeason/<int:league_id>", methods=["POST"])
-def end_season(league_id):
-    league = get_league_by_id(league_id)
-    if not league:
-        flash("League not found.", "danger")
-        return redirect(url_for("main.home"))
-
-    if league.get("league_type") != "seasonal":
-        flash("This league is not a seasonal league!", "danger")
-        return redirect(url_for("main.league", league_id=league_id))
-    
-    from .models import end_seasonal_round
-    success = end_seasonal_round(league_id)
-    if success:
-        flash("Season ended! Trophies awarded and scores reset.", "success")
-    else:
-        flash("Error ending the season.", "danger")
-
-    return redirect(url_for("main.league", league_id=league_id))
 
 
 @main.route("/joinLeague", methods=["GET", "POST"])
@@ -247,33 +212,34 @@ async def league(league_id):
         flash("error creating league leaderboard")
     
     recent_bets = []
-    recent_bets_info = get_recent_league_bets(league_id)
+    if league_type == "classic":
+        recent_bets_info = get_recent_league_bets(league_id)
         
-    # Get match details for these bets
-    match_details = {}
-    async with aiohttp.ClientSession() as session:
-        understat = Understat(session)
-        fixtures = await understat.get_league_fixtures("epl", 2024)
-        results = await understat.get_league_results("epl", 2024)
+        # Get match details for these bets
+        match_details = {}
+        async with aiohttp.ClientSession() as session:
+            understat = Understat(session)
+            fixtures = await understat.get_league_fixtures("epl", 2024)
+            results = await understat.get_league_results("epl", 2024)
             
-        all_matches = fixtures + results
+            all_matches = fixtures + results
             
-        # Get fixture IDs ezier
-        fixture_ids = [f["id"] for f in fixtures]
+            # Get fixture IDs ezier
+            fixture_ids = [f["id"] for f in fixtures]
             
-        for match in all_matches:
-            match_id = match["id"]
-            match_details[match_id] = match
+            for match in all_matches:
+                match_id = match["id"]
+                match_details[match_id] = match
             
         # Combine bet info with match details
-    for bet in recent_bets_info:
-        match_id = bet['match_id']
-        if match_id in match_details:
-            match = match_details[match_id]
-            # match still a fixture
-            if match_id in fixture_ids:
-                bet['match'] = match
-                recent_bets.append(bet)
+        for bet in recent_bets_info:
+            match_id = bet['match_id']
+            if match_id in match_details:
+                match = match_details[match_id]
+                # match still a fixture
+                if match_id in fixture_ids:
+                    bet['match'] = match
+                    recent_bets.append(bet)
 
     return render_template("league.html", league=league, recent_bets=recent_bets)
 
@@ -765,7 +731,7 @@ async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
             # Calculate points and multiplier (without minutes)
             player = player_dict[player_id]
             points_data = player_prediction_system.calculate_points(
-                player, goals, shots
+                player, goals, shots, bet_amount
             )
             
             # Check if prediction already exists
@@ -908,8 +874,27 @@ async def yourBets():
                           match_details=match_details,
                           player_details=player_details,
                           league_info=league_info)
-# Stats of users predictions in bottom of page
-        
+    
+@main.route('/process_bets', methods=['POST'])
+async def process_bets_route():
+    if "username" not in session:
+        return jsonify({"success": False, "message": "You must be logged in to process bets"}), 403
+    
+    user = get_user(session["username"])
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+    
+    # For now, allow any logged in user to process bets
+    
+    try:
+        result = await process_all_bets()
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        print(f"Error in process_bets_route: {e}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": f"Error processing bets: {str(e)}"}), 500
+    
 @main.route("/result/<league_code>/<match_id>")
 @main.route("/result/<match_id>") 
 async def single_result(match_id, league_code=DEFAULT_LEAGUE):
