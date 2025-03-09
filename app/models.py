@@ -40,7 +40,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS fantasyLeagues (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     league_name TEXT NOT NULL,
-                    league_type TEXT CHECK(league_type IN ('classic', 'head2head')) NOT NULL,
+                    league_type TEXT CHECK(league_type IN ('classic', 'seasonal')) NOT NULL,
                     privacy TEXT CHECK(privacy IN ('Public', 'Private')) NOT NULL,
                     league_code TEXT UNIQUE,
                     members TEXT DEFAULT '',
@@ -379,7 +379,7 @@ def add_fantasy_league(league_name, league_type, privacy, username):
             league_id = c.lastrowid
             
             #set league end for 1 week from creation
-            if league_type == "head2head":
+            if league_type == "seasonal":
                 season_end = (datetime.now() + timedelta(weeks=1)).isoformat(sep=' ', timespec='seconds')
                 c.execute('''
                     UPDATE fantasyLeagues 
@@ -634,8 +634,8 @@ def get_league_leaderboard(league_id):
             conn.close()
     return []
 
-def get_H2H_league_leaderboard(league_id):
-    """Fetch the leaderboard for a specific Head2Head league"""
+def get_seasonal_league_leaderboard(league_id):
+    """Fetch the leaderboard for a specific seasonal league"""
     conn = get_db_connection()
     if conn is not None:
         try:

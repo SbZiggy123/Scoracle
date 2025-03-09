@@ -58,38 +58,24 @@ function placeBet(leagueId, matchId, prediction, button) {
   })
   .catch(error => console.error("Error placing bet:", error));
 }
-// timer. not working. to be fixed tomorrow
-  const roundEndStr = "{{ league['season_end'] }}";
-  const countdownEl = document.getElementById("countdown");
+// timer countdown
+if (typeof timeLeft !== 'undefined' && timeLeft > 0) {
+  const countdownEl = document.getElementById('countdown');
 
   function updateCountdown() {
-    // Convert to a Date object
-    const endTime = new Date(roundEndStr).getTime();
-    const now = new Date().getTime();
-    const distance = endTime - now;
-
-    if (distance < 0) {
-      // If time has passed
-      countdownEl.innerHTML = "Round ended!";
+    if (timeLeft <= 0) {
+      countdownEl.textContent = 'Round ended!';
       return;
     }
+    const days = Math.floor(timeLeft / 86400);
+    const hours = Math.floor((timeLeft % 86400) / 3600);
+    const minutes = Math.floor((timeLeft % 3600) / 60);
+    const seconds = timeLeft % 60;
 
-    // Calculate days, hours, mins, secs
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-    // Display "Xd Xh Xm Xs"
-    countdownEl.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-
-    // Re-run every second
+    countdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    timeLeft--;
     setTimeout(updateCountdown, 1000);
   }
 
-  // Now we're OUTSIDE the function
-  if (roundEndStr) {
-    updateCountdown();
-  } else {
-    countdownEl.innerHTML = "No season end date set.";
-  }
+  updateCountdown();
+}

@@ -14,12 +14,14 @@
             <p><strong>Code:</strong> <span class="league-code">{{ league.league_code }}</span></p>
           {% endif %}
           
-          {% if league.league_type == "head2head" %}
-          <p> if statement works</p>
-          <div class="countdown-container">
-            <p>season end:</p>
-            <div id="countdown"></div>
-          </div>
+          {% if league.league_type == "seasonal" %}
+            <div class="countdown-container">
+              <p>Season end:</p>
+              <div id="countdown"></div>
+            </div>
+            <script>
+              let timeLeft = {{ league["time_left"]|default(0)|int }};
+            </script>
           {% endif %}
           <p>{{ league.created_at[:10] }}</p>
         </div>
@@ -60,7 +62,7 @@
             </tbody>
           </table>
 
-        {% elif league.league_type == "head2head" %}
+        {% elif league.league_type == "seasonal" %}
         <div class="leaderboard-container">
           <table class="leaderboard-table">
             <thead>
@@ -82,7 +84,7 @@
               {% endfor %}
             </tbody>
           </table>
-          {% endif %}
+        {% endif %}
 
       </div>
     
