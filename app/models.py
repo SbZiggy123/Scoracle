@@ -690,33 +690,36 @@ def end_seasonal_round(league_id):
         try:
             c = conn.cursor()
 
-            #get top scorer
+            # Find the maximum score in the league
             c.execute("""
-                SELECT user_id, score
+                SELECT MAX(score) 
                 FROM league_scores
                 WHERE league_id = ?
-                ORDER BY score DESC
-                LIMIT 1
             """, (league_id,))
-            top_user = c.fetchone()
+            max_score_result = c.fetchone()
+            if not max_score_result or max_score_result[0] is None:
+                # No rows or no valid score
+                conn.close()
+                return False
 
-            if top_user:
-                top_user_id, _ = top_user
-                # 2. give them +1 trophy
-                c.execute("""
-                    UPDATE league_scores
-                    SET trophies = trophies + 1
-                    WHERE user_id = ? AND league_id = ?
-                """, (top_user_id, league_id))
+            max_score = max_score_result[0]
 
-            # 3. Reset everyone's score to 1000
+            #Award trophies to all users with top score
+            c.execute("""
+                UPDATE league_scores
+                SET trophies = trophies + 1
+                WHERE league_id = ?
+                  AND score = ?
+            """, (league_id, max_score))
+
+            # Reset everyone's score to 1000
             c.execute("""
                 UPDATE league_scores
                 SET score = 1000
                 WHERE league_id = ?
             """, (league_id,))
 
-            # 4. Set the new season_end to one week from now
+            # Set the new season_end to one week from now
             new_end_dt = datetime.now() + timedelta(weeks=1)
             new_end_str = new_end_dt.strftime("%Y-%m-%d %H:%M:%S")
             c.execute("""
