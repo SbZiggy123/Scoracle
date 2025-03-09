@@ -136,50 +136,47 @@ class PlayerPredictionSystem:
         # Expected minutes - use average or recent minutes if available see above
         exp_minutes = player["last_mins_played"] if player["recently_played"] else player["avg_mins_per_game"]
         
-        # maybe remove this entirely?
+        
         return {
             "exp_goals": round(exp_goals_per_90 * (exp_minutes / 90), 2),
             "exp_shots": round(exp_shots_per_90 * (exp_minutes / 90), 2),
-            "exp_minutes": round(exp_minutes)
+            "exp_minutes": round(exp_minutes)  # not given to UI
         }
     
-    def calculate_prediction_multiplier(self, player, predicted_goals, predicted_shots, predicted_minutes):
+    def calculate_prediction_multiplier(self, player, predicted_goals, predicted_shots):
         """Calculate multiplier based on how bold the prediction is"""
         # Get baseline expectations
         expected = self.calculate_player_expected_stats(player)
         
-        # Calculate deviation of user from expectations. Like games. multiplier derived from how fat they deviate
+        # Calculate deviation of user from expectations
         goals_diff = abs(predicted_goals - expected["exp_goals"])
         shots_diff = abs(predicted_shots - expected["exp_shots"])
-        minutes_diff = abs(predicted_minutes - expected["exp_minutes"])
         
         # Normalize differences based on typical ranges
         normalized_goals_diff = min(goals_diff / 1.0, 3.0)  # Capped
         normalized_shots_diff = min(shots_diff / 2.0, 2.0)  
-        normalized_minutes_diff = min(minutes_diff / 30.0, 1.5)  
         
         base_multiplier = 1.0
         
         # Different weights for different stats
-        goals_weight = 0.5
-        shots_weight = 0.3
-        minutes_weight = 0.2
+        goals_weight = 0.65  # Was 0.5
+        shots_weight = 0.35  # Was 0.3
+        # minutes_weight removed (was 0.2)
         
         # Calculate weighted average multiplier
         multiplier = base_multiplier + (
             normalized_goals_diff * goals_weight +
-            normalized_shots_diff * shots_weight +
-            normalized_minutes_diff * minutes_weight
+            normalized_shots_diff * shots_weight
         )
         
         multiplier = max(1.0, min(multiplier, 8.0))
         
         return round(multiplier, 2)
     
-    def calculate_points(self, player, predicted_goals, predicted_shots, predicted_minutes):
+    def calculate_points(self, player, predicted_goals, predicted_shots):
         """Calculate potential points for a player prediction"""
         multiplier = self.calculate_prediction_multiplier(
-            player, predicted_goals, predicted_shots, predicted_minutes
+            player, predicted_goals, predicted_shots
         )
         
         return {

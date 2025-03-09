@@ -5,6 +5,8 @@
     <main>
         <h1>Your Predictions</h1>
         
+        <!-- Match Predictions Section -->
+        <h2 class="section-title">Match Predictions</h2>
         {% if predictions %}
             <table class="bets-table">
                 <thead>
@@ -34,7 +36,11 @@
                                 {% endif %}
                             </td>
                             <td>
-                            {{ match_details[prediction.match_id].datetime.split(' ')[0] }}
+                                {% if prediction.match_id in match_details %}
+                                    {{ match_details[prediction.match_id].datetime.split(' ')[0] }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
                             </td>
                             <td class="prediction-score">{{ prediction.home_score }} - {{ prediction.away_score }}</td>
                             <td>{{ prediction.multiplier }}x</td>
@@ -42,7 +48,7 @@
                                 <div>Exact: {{ prediction.potential_exact_points }}</div>
                                 <div>Result: {{ prediction.potential_result_points }}</div>
                             </td>
-                            <td> <!-- For working later -->
+                            <td>
                                 {% if prediction.points_earned is not none %}
                                     <div class="points-earned">{{ prediction.points_earned }} points</div>
                                     {% if prediction.exact_score %}
@@ -61,9 +67,84 @@
                 </tbody>
             </table>
         {% else %}
-            <p>You haven't made any predictions yet.</p>
+            <p>You haven't made any match predictions yet.</p>
+        {% endif %}
+        
+        <!-- Player Predictions Section -->
+        <h2 class="section-title">Player Predictions</h2>
+        {% if player_predictions %}
+            <table class="player-bets-table">
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>Date</th>
+                        <th>Player</th>
+                        <th>Prediction</th>
+                        <th>Multiplier</th>
+                        <th>Potential Points</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prediction in player_predictions %}
+                        <tr>
+                            <td>
+                                {% if prediction.match_id in match_details %}
+                                    <div class="match-teams">
+                                        <img src="" class="team-crest" data-team="{{ match_details[prediction.match_id].home_team }}">
+                                        <span>{{ match_details[prediction.match_id].home_team }}</span>
+                                        <span>vs</span>
+                                        <span>{{ match_details[prediction.match_id].away_team }}</span>
+                                        <img src="" class="team-crest" data-team="{{ match_details[prediction.match_id].away_team }}">
+                                    </div>
+                                {% else %}
+                                    Match ID: {{ prediction.match_id }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if prediction.match_id in match_details %}
+                                    {{ match_details[prediction.match_id].datetime.split(' ')[0] }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if prediction.player_id in player_details %}
+                                    <span>{{ player_details[prediction.player_id].name }}</span>
+                                    <span class="player-team">({{ player_details[prediction.player_id].team }})</span>
+                                {% else %}
+                                    Player ID: {{ prediction.player_id }}
+                                {% endif %}
+                            </td>
+                            <td class="player-prediction-details">
+                                <div>Goals: {{ prediction.goals_prediction }}</div>
+                                <div>Shots: {{ prediction.shots_prediction }}</div>
+                            </td>
+                            <td>{{ prediction.multiplier }}x</td>
+                            <td>{{ prediction.potential_points }}</td>
+                            <td>
+                                {% if prediction.points_earned is not none %}
+                                    <div class="points-earned">{{ prediction.points_earned }} points</div>
+                                    {% if prediction.prediction_correct %}
+                                        <div class="prediction-result correct">Correct</div>
+                                    {% else %}
+                                        <div class="prediction-result incorrect">Incorrect</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="prediction-result pending">Pending</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>You haven't made any player predictions yet.</p>
+        {% endif %}
+        
+        {% if not predictions and not player_predictions %}
             <div class="no-bets-action">
-                <a href="{{ url_for('main.premier_league') }}" class="action-button">View Upcoming Matches</a>
+                <a href="{{ url_for('main.league_view', league_code='epl') }}" class="action-button">View Upcoming Matches</a>
             </div>
         {% endif %}
     </main>

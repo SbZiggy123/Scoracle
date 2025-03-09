@@ -174,6 +174,7 @@
                 </div>
             </div>
             <!-- Can put this wherever-->
+<!-- Player prediction section -->
             <div class="player-predictions">
                 <h3>Player Predictions</h3>
                 <div class="prediction-tabs">
@@ -192,8 +193,7 @@
                                     <th>Games</th>
                                     <th>Goals</th>
                                     <th>Shots</th>
-                                    <th>Mins</th>
-                                    <th>Expected (Goals/Shots/Mins)</th>
+                                    <th>Expected (Goals/Shots)</th>
                                     <th>Your Prediction</th>
                                 </tr>
                             </thead>
@@ -205,27 +205,21 @@
                                     <td>{{ player.games }}</td>
                                     <td>{{ player.goals }}</td>
                                     <td>{{ player.shots }}</td>
-                                    <td>{{ player.avg_mins_per_game|round|int }}</td>
                                     <td>
                                         {{ player.expected_stats.exp_goals }} / 
-                                        {{ player.expected_stats.exp_shots|round|int }} / 
-                                        {{ player.expected_stats.exp_minutes|round|int }}
+                                        {{ player.expected_stats.exp_shots|round|int }}
                                     </td>
                                     <td class="prediction-cell">
                                         {% if session.username %}
                                             <div class="player-prediction-inputs">
                                                 <div class="prediction-input-group">
                                                     <input type="number" min="0" max="10" class="player-goals-input" 
-                                                        placeholder="0 Goals" data-player-id="{{ player.id }}"
+                                                        placeholder="Goals" data-player-id="{{ player.id }}"
                                                         value="{{ user_player_predictions[player.id].goals_prediction if player.id in user_player_predictions else '' }}">
                                                     
                                                     <input type="number" min="0" max="20" class="player-shots-input" 
-                                                        placeholder="0 Shots" data-player-id="{{ player.id }}"
+                                                        placeholder="Shots" data-player-id="{{ player.id }}"
                                                         value="{{ user_player_predictions[player.id].shots_prediction if player.id in user_player_predictions else '' }}">
-                                                    
-                                                    <input type="number" min="0" max="90" class="player-minutes-input" 
-                                                        placeholder="0 Mins" data-player-id="{{ player.id }}"
-                                                        value="{{ user_player_predictions[player.id].minutes_prediction if player.id in user_player_predictions else '' }}">
                                                 </div>
                                                 
                                                 <div class="prediction-multiplier" data-player-id="{{ player.id }}">
@@ -258,8 +252,7 @@
                                     <th>Games</th>
                                     <th>Goals</th>
                                     <th>Shots</th>
-                                    <th>Mins/Game</th>
-                                    <th>Expected (Goals/Shots/Mins)</th>
+                                    <th>Expected (Goals/Shots)</th>
                                     <th>Your Prediction</th>
                                 </tr>
                             </thead>
@@ -271,27 +264,21 @@
                                     <td>{{ player.games }}</td>
                                     <td>{{ player.goals }}</td>
                                     <td>{{ player.shots }}</td>
-                                    <td>{{ player.avg_mins_per_game|round|int }}</td>
                                     <td>
                                         {{ player.expected_stats.exp_goals }} / 
-                                        {{ player.expected_stats.exp_shots|round|int }} / 
-                                        {{ player.expected_stats.exp_minutes|round|int }}
+                                        {{ player.expected_stats.exp_shots|round|int }}
                                     </td>
                                     <td class="prediction-cell">
                                         {% if session.username %}
                                             <div class="player-prediction-inputs">
                                                 <div class="prediction-input-group">
                                                     <input type="number" min="0" max="10" class="player-goals-input" 
-                                                        placeholder="0 Goals" data-player-id="{{ player.id }}"
+                                                        placeholder="Goals" data-player-id="{{ player.id }}"
                                                         value="{{ user_player_predictions[player.id].goals_prediction if player.id in user_player_predictions else '' }}">
                                                     
                                                     <input type="number" min="0" max="20" class="player-shots-input" 
-                                                        placeholder="0 Shots" data-player-id="{{ player.id }}"
+                                                        placeholder="Shots" data-player-id="{{ player.id }}"
                                                         value="{{ user_player_predictions[player.id].shots_prediction if player.id in user_player_predictions else '' }}">
-                                                    
-                                                    <input type="number" min="0" max="90" class="player-minutes-input" 
-                                                        placeholder="0 Mins" data-player-id="{{ player.id }}"
-                                                        value="{{ user_player_predictions[player.id].minutes_prediction if player.id in user_player_predictions else '' }}">
                                                 </div>
                                                 
                                                 <div class="prediction-multiplier" data-player-id="{{ player.id }}">

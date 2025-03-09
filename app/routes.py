@@ -505,7 +505,6 @@ async def get_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
                 expected_stats = player_prediction_system.calculate_player_expected_stats(player)
                 player_data[team][i]["expected_stats"] = expected_stats
         
-        
         if "username" in session:
             user = get_user(session["username"])
             if user:
@@ -519,14 +518,14 @@ async def get_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
         print(f"Error getting player predictions: {e}")
         print(traceback.format_exc())
         return jsonify({"error": str(e)})
-
+    
 @main.route('/api/player-predictions/<league_code>/<match_id>', methods=['POST'])
 @main.route('/api/player-predictions/<match_id>', methods=['POST'])
 async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
-
+    """Save a user's player predictions"""
     if league_code not in LEAGUE_MAPPING:
         league_code = DEFAULT_LEAGUE
-    """Save a user's player predictions"""
+    
     if "username" not in session:
         return jsonify({"error": "You must be logged in to make predictions"})
     
@@ -556,7 +555,7 @@ async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
         player_id = prediction.get("player_id")
         goals = prediction.get("goals", 0)
         shots = prediction.get("shots", 0)
-        minutes = prediction.get("minutes", 0)
+        
         
         if not player_id or player_id not in player_dict:
             results.append({
@@ -569,13 +568,13 @@ async def save_player_predictions(match_id, league_code=DEFAULT_LEAGUE):
         # Calculate points and multiplier
         player = player_dict[player_id]
         points_data = player_prediction_system.calculate_points(
-            player, goals, shots, minutes
+            player, goals, shots
         )
         
-        # Save prediction
+        # Save prediction (pass 0 for minutes field since it still exists in the DB)
         success = save_player_prediction(
             user["id"], match_id, player_id,
-            goals, shots, minutes,
+            goals, shots, 0,  # 0 for minutes
             multiplier=points_data["multiplier"],
             potential_points=points_data["potential_points"]
         )
@@ -602,9 +601,12 @@ async def yourBets():
         return redirect(url_for("main.home"))
     
     predictions = get_user_predictions(user["id"])
+    player_predictions = get_user_player_predictions(user["id"])  # Get all player predictions
     
     # Fetch match details for each prediction
     match_details = {}
+    player_details = {}  # To store player names
+    
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         fixtures = await understat.get_league_fixtures("epl", 2024)
@@ -613,13 +615,33 @@ async def yourBets():
         all_matches = fixtures + results
         
         for match in all_matches:
-            match_details[match["id"]] = {
+            match_id = match["id"]
+            match_details[match_id] = {
                 "home_team": match["h"]["title"],
                 "away_team": match["a"]["title"],
                 "datetime": match["datetime"]
             }
+            
+            # Get player details for matches with player predictions
+            match_player_predictions = [p for p in player_predictions if p["match_id"] == match_id]
+            if match_player_predictions:
+                try:
+                    match_players = await understat.get_match_players(match_id)
+                    for team in ["h", "a"]:
+                        if team in match_players:
+                            for player_data in match_players[team].values():
+                                player_details[player_data["player_id"]] = {
+                                    "name": player_data["player"],
+                                    "team": match[team]["title"]
+                                }
+                except Exception as e:
+                    print(f"Error fetching player data for match {match_id}: {e}")
     
-    return render_template("yourBets.html", predictions=predictions, match_details=match_details)
+    return render_template("yourBets.html", 
+                          predictions=predictions, 
+                          player_predictions=player_predictions,
+                          match_details=match_details,
+                          player_details=player_details)
 # Stats of users predictions in bottom of page
         
 @main.route("/result/<league_code>/<match_id>")

@@ -272,7 +272,7 @@ def get_user_predictions(user_id, limit=10):
             conn.close()
     return []
 
-def save_player_prediction(user_id, match_id, player_id, goals_prediction, shots_prediction, minutes_prediction, 
+def save_player_prediction(user_id, match_id, player_id, goals_prediction, shots_prediction, minutes_prediction=0, 
                          multiplier=1.0, potential_points=100):
     """Save or update a user's player prediction."""
     conn = get_db_connection()

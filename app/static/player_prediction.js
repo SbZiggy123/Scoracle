@@ -1,4 +1,4 @@
-// Player prediction functionality gonna try do without page reload if fail do with
+
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching functionality
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Call fetch function on page load
     fetchPlayerData();
     
-    // Calculate multiplier and potential points for a player prediction
-    function calculatePlayerMultiplier(playerId, goals, shots, minutes) {
+    // Calculate multiplier and potential points for a player prediction (without minutes)
+    function calculatePlayerMultiplier(playerId, goals, shots) {
         const player = playerDataMap[playerId];
         
         if (!player) return { multiplier: 1.0, points: 100 };
@@ -55,26 +55,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate deviation from expectations
         const goalsDiff = Math.abs(goals - expectedStats.exp_goals);
         const shotsDiff = Math.abs(shots - expectedStats.exp_shots);
-        const minutesDiff = Math.abs(minutes - expectedStats.exp_minutes);
         
         // Normalize differences based on typical ranges
         const normalizedGoalsDiff = Math.min(goalsDiff / 1.0, 3.0);
         const normalizedShotsDiff = Math.min(shotsDiff / 2.0, 2.0);
-        const normalizedMinutesDiff = Math.min(minutesDiff / 30.0, 1.5);
         
         // Calculate base multiplier
         let baseMultiplier = 1.0;
         
-        // Maybe change
-        const goalsWeight = 0.5;
-        const shotsWeight = 0.3;
-        const minutesWeight = 0.2;
+        // Updated weights (without minutes)
+        const goalsWeight = 0.65;  // Was 0.5
+        const shotsWeight = 0.35;  // Was 0.3
         
         // Calculate weighted average multiplier
         let multiplier = baseMultiplier + (
             normalizedGoalsDiff * goalsWeight +
-            normalizedShotsDiff * shotsWeight +
-            normalizedMinutesDiff * minutesWeight
+            normalizedShotsDiff * shotsWeight
         );
         
         // Ensure multiplier has reasonable bounds
@@ -93,9 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function attachInputListeners() {
         const goalInputs = document.querySelectorAll('.player-goals-input');
         const shotInputs = document.querySelectorAll('.player-shots-input');
-        const minuteInputs = document.querySelectorAll('.player-minutes-input');
         
-        const allInputs = [...goalInputs, ...shotInputs, ...minuteInputs];
+        const allInputs = [...goalInputs, ...shotInputs];
         
         allInputs.forEach(input => {
             input.addEventListener('change', function() {
@@ -114,21 +109,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePlayerMultiplier(playerId) {
         const goalsInput = document.querySelector(`.player-goals-input[data-player-id="${playerId}"]`);
         const shotsInput = document.querySelector(`.player-shots-input[data-player-id="${playerId}"]`);
-        const minutesInput = document.querySelector(`.player-minutes-input[data-player-id="${playerId}"]`);
         const multiplierDisplay = document.querySelector(`.prediction-multiplier[data-player-id="${playerId}"]`);
         
-        if (!goalsInput || !shotsInput || !minutesInput || !multiplierDisplay) return;
+        if (!goalsInput || !shotsInput || !multiplierDisplay) return;
         
         const goals = parseInt(goalsInput.value) || 0;
         const shots = parseInt(shotsInput.value) || 0;
-        const minutes = parseInt(minutesInput.value) || 0;
         
-        const { multiplier, points } = calculatePlayerMultiplier(playerId, goals, shots, minutes);
+        const { multiplier, points } = calculatePlayerMultiplier(playerId, goals, shots);
         
         multiplierDisplay.textContent = `${multiplier.toFixed(2)}x (${points} pts)`;
     }
     
-   
     attachInputListeners();
     
     const saveButtons = document.querySelectorAll('.save-player-prediction');
@@ -144,26 +136,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function savePlayerPrediction(playerId) {
         const goalsInput = document.querySelector(`.player-goals-input[data-player-id="${playerId}"]`);
         const shotsInput = document.querySelector(`.player-shots-input[data-player-id="${playerId}"]`);
-        const minutesInput = document.querySelector(`.player-minutes-input[data-player-id="${playerId}"]`);
         
-        if (!goalsInput || !shotsInput || !minutesInput) return;
+        if (!goalsInput || !shotsInput) return;
         
         const goals = parseInt(goalsInput.value) || 0;
         const shots = parseInt(shotsInput.value) || 0;
-        const minutes = parseInt(minutesInput.value) || 0;
-        
         
         // Create prediction array with just this player
         const predictions = [{
             player_id: playerId,
             goals: goals,
             shots: shots,
-            minutes: minutes
+            minutes: 0  // Set to 0 as we're not using minutes anymore
         }];
         
         // Send to end
         savePredictions(predictions, () => {
-            
             const button = document.querySelector(`.save-player-prediction[data-player-id="${playerId}"]`);
             const originalText = button.textContent;
             
@@ -197,21 +185,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const playerId = elem.dataset.playerId;
             const goalsInput = document.querySelector(`.player-goals-input[data-player-id="${playerId}"]`);
             const shotsInput = document.querySelector(`.player-shots-input[data-player-id="${playerId}"]`);
-            const minutesInput = document.querySelector(`.player-minutes-input[data-player-id="${playerId}"]`);
             
-            if (!goalsInput || !shotsInput || !minutesInput) return;
+            if (!goalsInput || !shotsInput) return;
             
             // Only include if at least one field has a value
-            if (goalsInput.value || shotsInput.value || minutesInput.value) {
+            if (goalsInput.value || shotsInput.value) {
                 predictions.push({
                     player_id: playerId,
                     goals: parseInt(goalsInput.value) || 0,
                     shots: parseInt(shotsInput.value) || 0,
-                    minutes: parseInt(minutesInput.value) || 0
+                    minutes: 0  // Set to 0 as we're not using minutes anymore
                 });
             }
         });
-        // not possible yet... Needs fixing for correct working
+  
         if (predictions.length === 0) {
             alert("No player predictions to save!");
             return;
