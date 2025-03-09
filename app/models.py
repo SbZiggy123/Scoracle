@@ -4,6 +4,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import string
 from datetime import datetime, timedelta
+import aiohttp
+import asyncio
+
 
 DATABASE = 'scoracle.db'
 
@@ -1072,12 +1075,6 @@ def get_recent_league_bets(league_id, limit=5):
     return []
 
 
-# Add this to models.py
-
-import aiohttp
-from datetime import datetime, timedelta
-import asyncio
-
 async def process_all_bets():
     """
     Process all pending bets for completed matches.
@@ -1240,7 +1237,7 @@ async def process_match_predictions(conn, match_id, match):
                 
                 # Calculate points earned
                 if exact_score:
-                    points_earned = potential_exact
+                    points_earned = potential_exact + potential_result
                 elif correct_result:
                     points_earned = potential_result
                 else:
