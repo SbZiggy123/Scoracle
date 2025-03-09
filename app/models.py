@@ -40,10 +40,11 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS fantasyLeagues (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     league_name TEXT NOT NULL,
-                    league_type TEXT CHECK(league_type IN ('classic', 'head2head')) NOT NULL,
+                    league_type TEXT CHECK(league_type IN ('classic', 'seasonal')) NOT NULL,
                     privacy TEXT CHECK(privacy IN ('Public', 'Private')) NOT NULL,
                     league_code TEXT UNIQUE,
                     members TEXT DEFAULT '',
+                    creator TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     season_end TIMESTAMP DEFAULT NULL
                 )
@@ -373,13 +374,13 @@ def add_fantasy_league(league_name, league_type, privacy, username):
             league_code = generate_league_code() if privacy == "Private" else None
             c = conn.cursor()
             c.execute('''
-                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members, season_end)
-                VALUES (?, ?, ?, ?, ?, null)
-            ''', (league_name, league_type, privacy, league_code, str(username)))
+                INSERT INTO fantasyLeagues (league_name, league_type, privacy, league_code, members, creator, season_end)
+                VALUES (?, ?, ?, ?, ?, ?, null)
+            ''', (league_name, league_type, privacy, league_code, str(username), str(username)))
             league_id = c.lastrowid
             
             #set league end for 1 week from creation
-            if league_type == "head2head":
+            if league_type == "seasonal":
                 season_end = (datetime.now() + timedelta(weeks=1)).isoformat(sep=' ', timespec='seconds')
                 c.execute('''
                     UPDATE fantasyLeagues 
@@ -428,15 +429,16 @@ def get_league_by_code(league_code):
     return None
 
 def get_league_by_id(league_id):
-    """Fetch league details by ID."""
+    """Fetch league details by ID"""
     conn = get_db_connection()
     if conn is not None:
         try:
             c = conn.cursor()
             c.execute("SELECT * FROM fantasyLeagues WHERE id = ?", (league_id,))
-            league = c.fetchone()
-            if league:
-                return dict(league)
+            row = c.fetchone()
+            if row:
+                league = dict(row)
+                return league
             return None
         except Error as e:
             print(f"Error fetching league: {e}")
@@ -634,8 +636,8 @@ def get_league_leaderboard(league_id):
             conn.close()
     return []
 
-def get_H2H_league_leaderboard(league_id):
-    """Fetch the leaderboard for a specific Head2Head league"""
+def get_seasonal_league_leaderboard(league_id):
+    """Fetch the leaderboard for a specific seasonal league"""
     conn = get_db_connection()
     if conn is not None:
         try:
@@ -679,6 +681,58 @@ def get_H2H_league_leaderboard(league_id):
         finally:
             conn.close()
     return []
+
+
+def end_seasonal_round(league_id):
+    """End the current seasonal round, award a trophy to the top scorer, reset all users' scores, and set a new season_end for next round. """
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+
+            #get top scorer
+            c.execute("""
+                SELECT user_id, score
+                FROM league_scores
+                WHERE league_id = ?
+                ORDER BY score DESC
+                LIMIT 1
+            """, (league_id,))
+            top_user = c.fetchone()
+
+            if top_user:
+                top_user_id, _ = top_user
+                # 2. give them +1 trophy
+                c.execute("""
+                    UPDATE league_scores
+                    SET trophies = trophies + 1
+                    WHERE user_id = ? AND league_id = ?
+                """, (top_user_id, league_id))
+
+            # 3. Reset everyone's score to 1000
+            c.execute("""
+                UPDATE league_scores
+                SET score = 1000
+                WHERE league_id = ?
+            """, (league_id,))
+
+            # 4. Set the new season_end to one week from now
+            new_end_dt = datetime.now() + timedelta(weeks=1)
+            new_end_str = new_end_dt.strftime("%Y-%m-%d %H:%M:%S")
+            c.execute("""
+                UPDATE fantasyLeagues
+                SET season_end = ?
+                WHERE id = ?
+            """, (new_end_str, league_id))
+
+            conn.commit()
+            return True
+        except Error as e:
+            print(f"Error ending seasonal round for league {league_id}: {e}")
+            return False
+        finally:
+            conn.close()
+    return False
 
 
 def update_league_score(user_id, league_id, points):
@@ -963,3 +1017,53 @@ def end_week_for_league(league_id):
         finally:
             conn.close()
     return False
+
+def get_recent_league_bets(league_id, limit=5):
+    """Get the most recent unique fixture bets made by users in a league for league.html"""
+    conn = get_db_connection()
+    if conn is not None:
+        try:
+            c = conn.cursor()
+            
+            # Fget all unique match_ids with their latest bet time
+            c.execute('''
+                SELECT match_id, MAX(created_at) as latest_bet_time
+                FROM user_predictions
+                WHERE league_id = ?
+                GROUP BY match_id
+                ORDER BY latest_bet_time DESC
+                LIMIT ?
+            ''', (league_id, limit))
+            
+            matches = c.fetchall()
+            
+            # For each match, get the user who made the latest bet
+            recent_bets = []
+            for match in matches:
+                match_id = match[0]
+                c.execute('''
+                    SELECT u.username, p.created_at, p.home_score, p.away_score
+                    FROM user_predictions p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.match_id = ? AND p.league_id = ?
+                    ORDER BY p.created_at DESC
+                    LIMIT 1
+                ''', (match_id, league_id))
+                
+                bet_info = c.fetchone()
+                if bet_info:
+                    recent_bets.append({
+                        'match_id': match_id,
+                        'username': bet_info[0],
+                        'created_at': bet_info[1],
+                        'home_score': bet_info[2],
+                        'away_score': bet_info[3]
+                    })
+            
+            return recent_bets
+        except Error as e:
+            print(f"Error getting recent league bets: {e}")
+            return []
+        finally:
+            conn.close()
+    return []

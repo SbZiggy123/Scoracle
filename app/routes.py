@@ -6,11 +6,12 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, StringField, PasswordField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.utils import secure_filename
-from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_H2H_league_leaderboard
+from .models import get_user, update_user, add_user, user_exists, init_db, verify_password, add_fantasy_league, get_league_by_code, get_public_leagues, save_prediction, get_user_predictions, get_league_by_id, get_user_leagues, is_user_in_league, add_user_to_league, get_league_leaderboard, place_bet, get_profile_pic, get_db_connection, get_user_player_predictions, save_player_prediction, ensure_user_in_global_league, get_seasonal_league_leaderboard, get_recent_league_bets
 from .player_prediction_model import PlayerPredictionSystem
 import aiohttp
 from understat import Understat # https://github.com/amosbastian/understat
 import json
+from datetime import datetime
 
 main = Blueprint('main', __name__)
 app = Flask(__name__)
@@ -125,6 +126,27 @@ def create_league():
 
     return render_template("createLeague.html")
 
+#route to reset season on seasonal league. resetting timer and points, and awarding top player with trophy
+@main.route("/endSeason/<int:league_id>", methods=["POST"])
+def end_season(league_id):
+    league = get_league_by_id(league_id)
+    if not league:
+        flash("League not found.", "danger")
+        return redirect(url_for("main.home"))
+
+    if league.get("league_type") != "seasonal":
+        flash("This league is not a seasonal league!", "danger")
+        return redirect(url_for("main.league", league_id=league_id))
+    
+    from .models import end_seasonal_round
+    success = end_seasonal_round(league_id)
+    if success:
+        flash("Season ended! Trophies awarded and scores reset.", "success")
+    else:
+        flash("Error ending the season.", "danger")
+
+    return redirect(url_for("main.league", league_id=league_id))
+
 
 @main.route("/joinLeague", methods=["GET", "POST"])
 def join_league():
@@ -159,6 +181,7 @@ def join_league():
 
     return render_template("joinLeague.html", leagues=public_leagues, user_leagues=user_league_ids)
 
+
 #called when user presses the join button on public league
 @main.route("/joinPublicLeague/<int:league_id>", methods=["POST"])
 def join_public_league(league_id):
@@ -182,10 +205,11 @@ def join_public_league(league_id):
 
     return redirect(url_for("main.join_league"))
 
+
+
 #called when user clicks on league name
 @main.route("/league/<int:league_id>")
 async def league(league_id):
-    """View a specific league after joining it, including leaderboard and fixtures."""
     league = get_league_by_id(league_id)
     if not league:
         flash("League not found")
@@ -195,18 +219,63 @@ async def league(league_id):
     members_str = league.get("members", "")
     member_list = [x.strip() for x in members_str.split(",") if x.strip()] if members_str else []
     league["member_list"] = member_list
+
     if league_type == "classic":
         league["leaderboard"] = get_league_leaderboard(league_id)
-    elif league_type == "head2head":
-        league["leaderboard"] = get_H2H_league_leaderboard(league_id)
+    elif league_type == "seasonal":
+        league["leaderboard"] = get_seasonal_league_leaderboard(league_id)
+
+        if league.get("season_end"):
+            season_end_str = league["season_end"]
+            try:
+                season_end_dt = datetime.strptime(season_end_str, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                season_end_dt = None
+
+            if season_end_dt:
+                diff = season_end_dt - datetime.now()
+                time_left = int(diff.total_seconds())
+                if time_left < 0:
+                    time_left = 0
+                league["time_left"] = time_left
+            else:
+                league["time_left"] = 0
+        else:
+            league["time_left"] = 0
+
     else:
         flash("error creating league leaderboard")
+    
+    recent_bets = []
+    recent_bets_info = get_recent_league_bets(league_id)
+        
+    # Get match details for these bets
+    match_details = {}
     async with aiohttp.ClientSession() as session:
         understat = Understat(session)
         fixtures = await understat.get_league_fixtures("epl", 2024)
-        upcoming_fixtures = sorted(fixtures, key=lambda x: x["datetime"])[:5]
+        results = await understat.get_league_results("epl", 2024)
+            
+        all_matches = fixtures + results
+            
+        # Get fixture IDs ezier
+        fixture_ids = [f["id"] for f in fixtures]
+            
+        for match in all_matches:
+            match_id = match["id"]
+            match_details[match_id] = match
+            
+        # Combine bet info with match details
+    for bet in recent_bets_info:
+        match_id = bet['match_id']
+        if match_id in match_details:
+            match = match_details[match_id]
+            # match still a fixture
+            if match_id in fixture_ids:
+                bet['match'] = match
+                recent_bets.append(bet)
 
-    return render_template("league.html", league=league, upcoming_fixtures=upcoming_fixtures)
+    return render_template("league.html", league=league, recent_bets=recent_bets)
 
 @main.route('/place_bet', methods=['POST'])
 def place_bet_route():
@@ -229,6 +298,7 @@ def place_bet_route():
     result = place_bet(user["id"], league_id, match_id, bet_amount, prediction)
     return jsonify(result)
 
+
 @main.route("/league_update", methods=["GET"])
 async def league_update():
     if "username" not in session:
@@ -240,7 +310,6 @@ async def league_update():
     if not league_id or not match_id:
         return jsonify({"success": False, "message": "Missing parameters"}), 400
 
-    # Use Understat to fetch match results
     async with aiohttp.ClientSession() as session_obj:
         understat = Understat(session_obj)
         results = await understat.get_league_results("epl", 2024)
@@ -255,6 +324,7 @@ async def league_update():
     from .models import get_league_leaderboard
     updated_leaderboard = get_league_leaderboard(league_id)
     return jsonify({"success": True, "leaderboard": updated_leaderboard})
+
 
 @main.route('/myLeagues')
 def my_leagues():
@@ -326,6 +396,7 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
     # Create a prediction system instance
     prediction_system = PredictionSystem()
     player_prediction_system = PlayerPredictionSystem()
+   
     
     try:
         # Get player prediction data
@@ -466,6 +537,7 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
                               (new_global_score, user["id"]))
                     conn.commit()
             
+         
             print(f"DEBUG: Prediction details - User ID: {user['id']}, Match ID: {match_id}")
             print(f"DEBUG: Home score: {home_score}, Away score: {away_score}")
             print(f"DEBUG: League ID: {league_id}, Bet Amount: {bet_amount}")
