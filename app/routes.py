@@ -462,7 +462,8 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
             points_data = prediction_system.calculate_points(
                 home_expected,
                 away_expected,
-                [home_score, away_score]
+                [home_score, away_score],
+                bet_amount  
             )
             
             print(f"DEBUG: Points data: {points_data}")

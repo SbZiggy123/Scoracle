@@ -79,7 +79,7 @@
                             <p>Potential Points:</p>
                             <ul>
                                 <li>Exact Score: <span id="exact-points">100</span></li>
-                                <li>Correct Result: <span id="result-points">100</span></li>
+                                <li>Correct Result: <span id="result-points">100 (1.00x)</span></li>
                             </ul>
                         </div>
                         
@@ -361,6 +361,9 @@
 <div id="match-data" 
     data-home-expected="{{ home_expected }}"
     data-away-expected="{{ away_expected }}"
+    data-home-win-prob="{{ probabilities.home_win }}"
+    data-draw-prob="{{ probabilities.draw }}"
+    data-away-win-prob="{{ probabilities.away_win }}"
     data-base-points="100">
 </div>
 

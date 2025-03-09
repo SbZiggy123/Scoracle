@@ -11,10 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const homeExpected = parseFloat(matchData.dataset.homeExpected);
     const awayExpected = parseFloat(matchData.dataset.awayExpected);
     const basePoints = parseInt(matchData.dataset.basePoints || "100");
+    
+    const homeWinProb = parseFloat(matchData.dataset.homeWinProb || "50") / 100;
+    const drawProb = parseFloat(matchData.dataset.drawProb || "25") / 100;
+    const awayWinProb = parseFloat(matchData.dataset.awayWinProb || "25") / 100;
 
     // Calculate points based on user prediction vs expected scores
-    function calculatePoints(homeScore, awayScore) {
-        // Calculate how "unlikely" the prediction is
+    function updatePrediction() {
+        const homeScore = parseInt(homeScoreInput.value) || 0;
+        const awayScore = parseInt(awayScoreInput.value) || 0;
+        const betAmount = parseInt(betAmountInput.value) || 50;
+
+        // For exact score multiplier
         const homeDiff = Math.abs(homeScore - homeExpected);
         const awayDiff = Math.abs(awayScore - awayExpected);
         let totalDiff = homeDiff + awayDiff;
@@ -24,36 +32,90 @@ document.addEventListener('DOMContentLoaded', function() {
             totalDiff = 4 + (totalDiff - 4) * 0.5;
         }
         
-        // Calculate multiplier (capped at 8x)
-        const oddsMultiplier = Math.min(1.0 + (totalDiff * 0.5), 8.0);
+        // Calculate exact score multiplier (capped at 8x)
+        const exactScoreMultiplier = Math.min(1.0 + (totalDiff * 0.5), 8.0).toFixed(2);
+        const exactScorePoints = Math.round(betAmount * exactScoreMultiplier);
         
-        // Calculate potential points based on bet amount
-        const betAmount = parseInt(betAmountInput.value) || 50;
+        // Calculate correct result multiplier based on predicted outcome
+        let predictedResult = "draw";
+        let resultText = "Draw";
+        let resultProbability = drawProb;
         
-        return {
-            multiplier: oddsMultiplier.toFixed(2),
-            exactScore: Math.round(betAmount * oddsMultiplier),
-            correctResult: Math.round(betAmount * 2)
-        };
-    }
-
-    function updatePredictionDisplay() {
-        const homeScore = parseInt(homeScoreInput.value) || 0;
-        const awayScore = parseInt(awayScoreInput.value) || 0;
-
-        const points = calculatePoints(homeScore, awayScore);
-
+        if (homeScore > awayScore) {
+            predictedResult = "home_win";
+            resultText = "Home Win";
+            resultProbability = homeWinProb;
+        } else if (homeScore < awayScore) {
+            predictedResult = "away_win";
+            resultText = "Away Win";
+            resultProbability = awayWinProb;
+        }
+        
+        // Calculate multiplier - higher for unlikely outcomes
+        const resultMultiplier = Math.min(1.0 + (1.5 * (1 - resultProbability)), 5.0).toFixed(2);
+        const resultPoints = Math.round(betAmount * resultMultiplier);
+        
         // Update display
-        oddsMultiplierSpan.textContent = points.multiplier;
-        exactPointsSpan.textContent = points.exactScore;
-        resultPointsSpan.textContent = points.correctResult;
+        oddsMultiplierSpan.textContent = exactScoreMultiplier;
+        exactPointsSpan.textContent = exactScorePoints;
+        resultPointsSpan.innerHTML = `${resultPoints} <span class="multiplier">(${resultMultiplier}x)</span>`;
+        
+        // Update result indicator
+        let resultIndicator = document.getElementById('result-indicator');
+        if (!resultIndicator) {
+            resultIndicator = document.createElement('div');
+            resultIndicator.id = 'result-indicator';
+            resultIndicator.className = 'result-indicator';
+            document.querySelector('.prediction-odds').appendChild(resultIndicator);
+        }
+        
+        // Set result indicator text and style
+        resultIndicator.textContent = `Predicting: ${resultText}`;
+        resultIndicator.dataset.result = predictedResult;
+        
+        // Apply styling based on probability
+        if (resultProbability < 0.25) {
+            resultIndicator.className = 'result-indicator unlikely';
+        } else if (resultProbability < 0.45) {
+            resultIndicator.className = 'result-indicator moderate';
+        } else {
+            resultIndicator.className = 'result-indicator likely';
+        }
     }
 
-    // Add event listeners for score inputs
-    homeScoreInput.addEventListener('input', updatePredictionDisplay);
-    awayScoreInput.addEventListener('input', updatePredictionDisplay);
+    // Add styles for result indicator
+    const style = document.createElement('style');
+    style.textContent = `
+    .result-indicator {
+        margin-top: 10px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+        font-weight: bold;
+    }
+    .result-indicator.likely {
+        background-color: #e0f7fa;
+        color: #0288d1;
+    }
+    .result-indicator.moderate {
+        background-color: #fff9c4;
+        color: #ffa000;
+    }
+    .result-indicator.unlikely {
+        background-color: #ffebee;
+        color: #d32f2f;
+    }
+    .multiplier {
+        font-size: 0.9em;
+        color: #666;
+    }
+    `;
+    document.head.appendChild(style);
+
+    // Add event listeners
+    homeScoreInput.addEventListener('input', updatePrediction);
+    awayScoreInput.addEventListener('input', updatePrediction);
     
-    // Add event listener for bet amount changes
     if (betAmountInput) {
         betAmountInput.addEventListener('input', function() {
             // Make sure bet amount is within bounds
@@ -61,13 +123,12 @@ document.addEventListener('DOMContentLoaded', function() {
             amount = Math.max(10, Math.min(500, amount));
             this.value = amount;
             
-            updatePredictionDisplay();
+            updatePrediction();
         });
     }
 
-    // Initialize display
-    updatePredictionDisplay();
-
+    // Initialise all in 1
+    updatePrediction();
 
     // CHARTS 
     
@@ -237,8 +298,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-
 });
-
 /* odds multiplier is over 1.00x even when user bets AI prediction 
 cos its based on the expected score which can be a decimal... AI prediction rounds that*/
