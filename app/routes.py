@@ -312,6 +312,7 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
     # Create a prediction system instance
     prediction_system = PredictionSystem()
     player_prediction_system = PlayerPredictionSystem()
+   
     
     try:
         # Get player prediction data
@@ -452,6 +453,7 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
                               (new_global_score, user["id"]))
                     conn.commit()
             
+         
             print(f"DEBUG: Prediction details - User ID: {user['id']}, Match ID: {match_id}")
             print(f"DEBUG: Home score: {home_score}, Away score: {away_score}")
             print(f"DEBUG: League ID: {league_id}, Bet Amount: {bet_amount}")
@@ -550,7 +552,7 @@ async def prediction(match_id, league_code=DEFAULT_LEAGUE):
         home_players=home_players,
         away_players=away_players,
         user_player_predictions=user_player_predictions,
-        user_leagues=user_leagues
+        user_leagues=user_leagues,
     )
     
 #need endpoints
