@@ -147,39 +147,48 @@ class PlayerPredictionSystem:
         """Calculate multiplier based on how bold the prediction is"""
         # Get baseline expectations
         expected = self.calculate_player_expected_stats(player)
+        exp_goals = expected["exp_goals"]
+        exp_shots = expected["exp_shots"]
         
-        # Calculate deviation of user from expectations
-        goals_diff = abs(predicted_goals - expected["exp_goals"])
-        shots_diff = abs(predicted_shots - expected["exp_shots"])
+        # Special case for zero predictions if someone who is likely to shot/score is betted on for 0
+        zero_bonus = 0 
         
-        # Normalize differences based on typical ranges
-        normalized_goals_diff = min(goals_diff / 1.0, 3.0)  # Capped
-        normalized_shots_diff = min(shots_diff / 2.0, 2.0)  
+        # If player typically scores/shots more, zero prediction is riskier
+        if predicted_goals == 0 and exp_goals > 0.5:
+            zero_bonus += min(exp_goals * 0.5, 1.0)  # Bonus up to 1.0
         
+        if predicted_shots == 0 and exp_shots > 2:
+            zero_bonus += min(exp_shots * 0.2, 0.5)  # Bonus up to 0.5
+        
+        # Calculate deviation from expectations
+        goals_diff = abs(predicted_goals - exp_goals)
+        shots_diff = abs(predicted_shots - exp_shots)
+        
+        # Exponential scaling for bold predictions
+        goals_multiplier = pow(goals_diff / 0.8, 1.5)  # More aggressive curve
+        shots_multiplier = pow(shots_diff / 1.5, 1.3)  # Slightly less aggressive
+        
+        # Weights for different stats
+        goals_weight = 0.7
+        shots_weight = 0.3
+        
+        # Base multiplier
         base_multiplier = 1.0
         
-        # Different weights for different stats
-        goals_weight = 0.65  # Was 0.5
-        shots_weight = 0.35  # Was 0.3
-        # minutes_weight removed (was 0.2)
-        
-        # Calculate weighted average multiplier
+        # Calculate weighted average multiplier with exponential factors
         multiplier = base_multiplier + (
-            normalized_goals_diff * goals_weight +
-            normalized_shots_diff * shots_weight
+            goals_multiplier * goals_weight +
+            shots_multiplier * shots_weight +
+            zero_bonus
         )
         
-        multiplier = max(1.0, min(multiplier, 8.0))
+        # Extra bonus for predicting far from expected
+        if goals_diff > 2 or shots_diff > 5:
+            multiplier *= 1.2  # 20% bonus for very bold predictions
+        
+        # Ensure multiplier has reasonable bounds
+        multiplier = max(1.0, min(multiplier, 10.0))  # Increased max to 10.0
         
         return round(multiplier, 2)
-    
-    def calculate_points(self, player, predicted_goals, predicted_shots):
-        """Calculate potential points for a player prediction"""
-        multiplier = self.calculate_prediction_multiplier(
-            player, predicted_goals, predicted_shots
-        )
+            
         
-        return {
-            "multiplier": multiplier,
-            "potential_points": int(self.base_points * multiplier)
-        }

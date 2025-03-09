@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchPlayerData();
     
     // Calculate multiplier and potential points for a player prediction (without minutes)
+
     function calculatePlayerMultiplier(playerId, goals, shots) {
         const player = playerDataMap[playerId];
         
@@ -51,30 +52,52 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Get expected stats
         const expectedStats = player.expected_stats;
+        const expGoals = expectedStats.exp_goals;
+        const expShots = expectedStats.exp_shots;
+        
+        // Special case for zero predictions - make it rewarding only when unexpected
+        let zeroBonus = 0;
+        
+        // If player typically scores but you predict 0, that's a bold bet
+        if (goals === 0 && expGoals > 0.5) {
+            zeroBonus += Math.min(expGoals * 0.5, 1.0);  // Bonus up to 1.0 for predicting 0 when expected is high
+        }
+        
+        if (shots === 0 && expShots > 2) {
+            zeroBonus += Math.min(expShots * 0.2, 0.5);  // Bonus up to 0.5 for predicting 0 shots when expected is high
+        }
         
         // Calculate deviation from expectations
-        const goalsDiff = Math.abs(goals - expectedStats.exp_goals);
-        const shotsDiff = Math.abs(shots - expectedStats.exp_shots);
+        const goalsDiff = Math.abs(goals - expGoals);
+        const shotsDiff = Math.abs(shots - expShots);
         
-        // Normalize differences based on typical ranges
-        const normalizedGoalsDiff = Math.min(goalsDiff / 1.0, 3.0);
-        const normalizedShotsDiff = Math.min(shotsDiff / 2.0, 2.0);
+        // Exponential scaling for bold predictions
+        // Using power functions makes the multiplier grow much faster as predictions get bolder
+        const goalsMultiplier = Math.pow(goalsDiff / 0.8, 1.5);  // More aggressive curve
+        const shotsMultiplier = Math.pow(shotsDiff / 1.5, 1.3);  // Slightly less aggressive
         
-        // Calculate base multiplier
+        // Higher weight for goals, lower for shots
+        const goalsWeight = 0.7;
+        const shotsWeight = 0.3;
+        
+        // Base multiplier
         let baseMultiplier = 1.0;
         
-        // Updated weights (without minutes)
-        const goalsWeight = 0.65;  // Was 0.5
-        const shotsWeight = 0.35;  // Was 0.3
-        
-        // Calculate weighted average multiplier
+        // Calculate weighted average multiplier with exponential factors
         let multiplier = baseMultiplier + (
-            normalizedGoalsDiff * goalsWeight +
-            normalizedShotsDiff * shotsWeight
+            goalsMultiplier * goalsWeight +
+            shotsMultiplier * shotsWeight +
+            zeroBonus
         );
         
+        // Extra bonus for predicting far from expected
+        // Rewards very bold predictions more.
+        if (goalsDiff > 2 || shotsDiff > 5) {
+            multiplier *= 1.2;  // 20% bonus for very bold predictions
+        }
+        
         // Ensure multiplier has reasonable bounds
-        multiplier = Math.max(1.0, Math.min(multiplier, 8.0));
+        multiplier = Math.max(1.0, min = Math.min(multiplier, 10.0)); 
         
         // Round to 2 decimal places
         multiplier = Math.round(multiplier * 100) / 100;
